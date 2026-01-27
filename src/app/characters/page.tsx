@@ -60,6 +60,23 @@ export default function CharactersPage() {
     );
   }
 
+  // Sort characters by role priority
+  const rolePriority: Record<string, number> = {
+    protagonist: 0,
+    antagonist: 1,
+    supporting: 2,
+    other: 3,
+  };
+
+  const sortedCharacters = [...bible.characters].sort((a, b) => {
+    const pa = rolePriority[a.role] ?? 999;
+    const pb = rolePriority[b.role] ?? 999;
+
+    const priorityDiff = pa - pb;
+    if (priorityDiff === 0) return a.name.localeCompare(b.name);
+    return priorityDiff;
+  });
+
   const getNextCharacterId = (): string => {
     const existingIds = bible.characters.map(c => c.id);
     let nextNum = 1;
@@ -264,7 +281,7 @@ export default function CharactersPage() {
               </div>
               
               <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
-              {bible.characters.length === 0 ? (
+              {sortedCharacters.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-zinc-800 flex items-center justify-center">
                     <span className="text-3xl">👤</span>
@@ -286,13 +303,20 @@ export default function CharactersPage() {
                   </div>
                 </div>
               ) : (
-                bible.characters.map((character) => (
+                sortedCharacters.map((character) => (
                   <div
                     key={character.id}
                     onClick={() => {
-                      setSelectedCharacter(character);
-                      setIsEditing(false);
-                      setIsCreating(false);
+                      // Toggle selection - if clicking the same character, deselect it
+                      if (selectedCharacter?.id === character.id) {
+                        setSelectedCharacter(null);
+                        setIsEditing(false);
+                        setIsCreating(false);
+                      } else {
+                        setSelectedCharacter(character);
+                        setIsEditing(false);
+                        setIsCreating(false);
+                      }
                     }}
                     className={`group p-4 rounded-xl border cursor-pointer transition-all ${
                       selectedCharacter?.id === character.id
@@ -341,18 +365,69 @@ export default function CharactersPage() {
                 />
               </div>
             ) : (
-              <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 shadow-xl flex items-center justify-center h-[600px]">
-                <div className="text-center">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-zinc-800 flex items-center justify-center">
-                    <span className="text-4xl">👤</span>
+              <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 shadow-xl p-8 h-[calc(100vh-200px)]">
+                <div className="h-full flex flex-col">
+                  <div className="text-center mb-8">
+                    <h3 className="text-2xl font-semibold text-white mb-2">Your Cast</h3>
+                    <p className="text-zinc-400">Click on a character to view their details</p>
                   </div>
-                  <p className="text-zinc-400 mb-6 text-lg">Select a character to view details</p>
-                  <button
-                    onClick={() => setShowCreateMenu(true)}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 rounded-lg text-sm font-medium transition-all hover:scale-105 shadow-lg shadow-blue-900/50"
-                  >
-                    + Create Your First Character
-                  </button>
+                  
+                  {bible.characters.length === 0 ? (
+                    <div className="flex-1 flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="w-32 h-32 mx-auto mb-6 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center border-4 border-zinc-700/50 border-dashed">
+                          <span className="text-6xl opacity-50">👤</span>
+                        </div>
+                        <p className="text-zinc-500 text-lg mb-2">No characters yet</p>
+                        <p className="text-zinc-600 text-sm">Create your first character to get started</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 p-4">
+                        {sortedCharacters.map((character) => (
+                          <button
+                            key={character.id}
+                            onClick={() => {
+                              // Toggle selection - if clicking the same character, deselect it
+                              if (selectedCharacter?.id === character.id) {
+                                setSelectedCharacter(null);
+                                setIsEditing(false);
+                                setIsCreating(false);
+                              } else {
+                                setSelectedCharacter(character);
+                                setIsEditing(false);
+                                setIsCreating(false);
+                              }
+                            }}
+                            className="group flex flex-col items-center gap-3 p-4 rounded-xl bg-zinc-800/30 hover:bg-zinc-800/60 border border-zinc-700/50 hover:border-zinc-600 transition-all hover:scale-105 hover:shadow-xl hover:shadow-blue-900/20"
+                          >
+                            {/* Avatar Circle */}
+                            <div className="relative">
+                              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-3xl font-bold text-white shadow-lg group-hover:shadow-blue-500/50 transition-shadow">
+                                {character.name ? character.name.charAt(0).toUpperCase() : '?'}
+                              </div>
+                              {/* Role Badge */}
+                              <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-zinc-900 border-2 border-zinc-700 flex items-center justify-center text-xs">
+                                {character.role === 'protagonist' && '⭐'}
+                                {character.role === 'antagonist' && '⚡'}
+                                {character.role === 'supporting' && '🎭'}
+                                {character.role === 'other' && '👤'}
+                              </div>
+                            </div>
+                            
+                            {/* Character Name */}
+                            <div className="text-center w-full">
+                              <p className="text-sm font-medium text-white truncate group-hover:text-blue-400 transition-colors">
+                                {character.name || 'Unnamed'}
+                              </p>
+                              <p className="text-xs text-zinc-500 capitalize">{character.role}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
