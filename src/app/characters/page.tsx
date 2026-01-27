@@ -362,6 +362,7 @@ export default function CharactersPage() {
                   onCancel={handleCancelEdit}
                   onDelete={() => handleDeleteCharacter(selectedCharacter.id)}
                   allCharacters={bible.characters}
+                  researchNotes={bible.research}
                 />
               </div>
             ) : (
@@ -465,7 +466,8 @@ function CharacterDetailPanel({
   onSave,
   onCancel,
   onDelete,
-  allCharacters
+  allCharacters,
+  researchNotes
 }: {
   character: Character;
   isEditing: boolean;
@@ -475,6 +477,7 @@ function CharacterDetailPanel({
   onCancel: () => void;
   onDelete: () => void;
   allCharacters: Character[];
+  researchNotes: any[];
 }) {
   const [editedCharacter, setEditedCharacter] = useState<Character>(character);
   // Store raw strings for comma-separated fields
@@ -863,36 +866,87 @@ function CharacterDetailPanel({
         )}
 
         {/* Linked Research Notes */}
-        {character.researchNotes && character.researchNotes.length > 0 && (
-          <div className="p-6 rounded-xl bg-gradient-to-br from-emerald-900/20 to-emerald-800/20 border border-emerald-700/30">
-            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-              <span>📚</span>
-              <span>Research Notes</span>
+        <div className="p-6 rounded-xl bg-gradient-to-br from-emerald-900/20 to-emerald-800/20 border border-emerald-700/30">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <span>📚</span>
+            <span>Research Insights</span>
+            {character.researchNotes && character.researchNotes.length > 0 && (
               <span className="text-sm text-emerald-400">({character.researchNotes.length})</span>
-            </h3>
-            <div className="space-y-3">
+            )}
+          </h3>
+          
+          {!character.researchNotes || character.researchNotes.length === 0 ? (
+            <div className="text-center py-6">
+              <p className="text-sm text-zinc-400 mb-2">No research linked to this character yet</p>
+              <p className="text-xs text-zinc-500">
+                Link research from the Research Library to see insights here
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
               {character.researchNotes.map((noteId) => {
-                const note = allCharacters.find(() => false); // This will be replaced with actual research lookup
+                const note = researchNotes.find(n => n.id === noteId);
+                if (!note) {
+                  console.log('Research note not found:', noteId, 'Available:', researchNotes.map(n => n.id));
+                  return null;
+                }
+                
                 return (
                   <div key={noteId} className="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-emerald-400">{noteId}</p>
-                        <p className="text-xs text-zinc-500 mt-1">Linked research - view in Research Library</p>
+                        <h4 className="text-sm font-semibold text-emerald-400">{note.question}</h4>
+                        {note.tags && note.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {note.tags.map((tag: string, idx: number) => (
+                              <span key={idx} className="text-xs px-2 py-0.5 bg-blue-600/20 border border-blue-600/50 rounded text-blue-400">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <a
                         href="/research"
-                        className="text-xs text-emerald-400 hover:text-emerald-300"
+                        className="text-xs text-emerald-400 hover:text-emerald-300 whitespace-nowrap ml-2"
                       >
-                        View →
+                        View Full →
                       </a>
                     </div>
+                    
+                    {/* Show summary if available, otherwise show first 2 bullets */}
+                    {note.summary ? (
+                      <p className="text-sm text-zinc-300 leading-relaxed mt-2 line-clamp-3">
+                        {note.summary}
+                      </p>
+                    ) : (
+                      <div className="mt-2 space-y-1">
+                        {note.bullets.slice(0, 2).map((bullet: string, idx: number) => (
+                          <p key={idx} className="text-sm text-zinc-300 line-clamp-2">
+                            • {bullet}
+                          </p>
+                        ))}
+                        {note.bullets.length > 2 && (
+                          <p className="text-xs text-zinc-500 italic">
+                            +{note.bullets.length - 2} more insights
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {note.sources && note.sources.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-zinc-700/50">
+                        <p className="text-xs text-zinc-500">
+                          {note.sources.length} source{note.sources.length !== 1 ? 's' : ''} cited
+                        </p>
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

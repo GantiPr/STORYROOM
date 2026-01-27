@@ -50,29 +50,42 @@ export default function ResearchPage() {
   };
 
   const handleSaveNoteFromChat = (note: ResearchNote) => {
-    // Save the research note
-    setBible(prev => ({
-      ...prev,
-      research: [...prev.research, note]
-    }));
-
-    // Update linked characters with this research note ID
-    if (note.linkedTo && note.linkedTo.length > 0) {
-      setBible(prev => ({
+    console.log('=== handleSaveNoteFromChat called ===');
+    console.log('Note to save:', note);
+    console.log('Current research count:', bible.research.length);
+    
+    // Save the research note AND update linked characters in a single state update
+    setBible(prev => {
+      const updatedResearch = [...prev.research, note];
+      
+      // Update linked characters with this research note ID
+      const updatedCharacters = note.linkedTo && note.linkedTo.length > 0
+        ? prev.characters.map(char => {
+            const isLinked = note.linkedTo?.some(link => link.type === "character" && link.id === char.id);
+            if (isLinked) {
+              console.log(`Linking note ${note.id} to character ${char.id}`);
+              return {
+                ...char,
+                researchNotes: [...(char.researchNotes || []), note.id]
+              };
+            }
+            return char;
+          })
+        : prev.characters;
+      
+      const updated = {
         ...prev,
-        characters: prev.characters.map(char => {
-          const isLinked = note.linkedTo?.some(link => link.type === "character" && link.id === char.id);
-          if (isLinked) {
-            return {
-              ...char,
-              researchNotes: [...(char.researchNotes || []), note.id]
-            };
-          }
-          return char;
-        })
-      }));
-    }
+        research: updatedResearch,
+        characters: updatedCharacters
+      };
+      
+      console.log('Updated bible - research count:', updated.research.length);
+      console.log('Updated bible - characters with research:', updated.characters.filter(c => c.researchNotes && c.researchNotes.length > 0).length);
+      
+      return updated;
+    });
 
+    console.log('Closing chat and setting selected note');
     setShowResearchChat(false);
     setSelectedNote(note);
   };
@@ -531,6 +544,8 @@ function ResearchChatModal({
       return;
     }
 
+    console.log('Saving research with agreed notes:', agreedNotes);
+
     // Extract question from first user message or use default
     const firstUserMessage = messages.find(m => m.role === "user");
     const question = firstUserMessage?.content || "Research Session";
@@ -543,6 +558,8 @@ function ResearchChatModal({
 
     // Collect all unique linked characters
     const allLinkedChars = [...new Set(agreedNotes.flatMap(n => n.linkedCharacters))];
+
+    console.log('Linked characters:', allLinkedChars);
 
     const newNote: ResearchNote = {
       id: nextNoteId,
@@ -563,6 +580,11 @@ function ResearchChatModal({
       tags: tags.length > 0 ? tags : undefined
     };
 
+    console.log('=== Calling onSave with research note ===');
+    console.log('Research note:', newNote);
+    console.log('Note ID:', newNote.id);
+    console.log('Bullets count:', newNote.bullets.length);
+    console.log('Linked characters:', newNote.linkedTo);
     onSave(newNote);
   };
 
