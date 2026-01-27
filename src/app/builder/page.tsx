@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useBible } from "@/hooks/useBible";
-import type { BuilderSession } from "@/lib/types";
+import type { BuilderSession, StoryPhase } from "@/lib/types";
 import Link from "next/link";
+import { PhaseSelector } from "@/components/PhaseSelector";
 
 export default function BuilderPage() {
   const { bible, setBible, isLoaded, isSaving } = useBible();
@@ -12,6 +13,10 @@ export default function BuilderPage() {
 
   // Ensure builderSessions exists
   const builderSessions = bible.builderSessions || [];
+
+  const handlePhaseChange = (phase: StoryPhase) => {
+    setBible(prev => ({ ...prev, phase }));
+  };
 
   if (!isLoaded) {
     return (
@@ -76,6 +81,13 @@ export default function BuilderPage() {
               <p className="text-zinc-400 mt-2 text-lg">Explore themes, conflicts, and scenarios with AI guidance</p>
             </div>
             <div className="flex items-center gap-4">
+              {/* Phase Selector */}
+              <PhaseSelector 
+                currentPhase={bible.phase || "discovery"}
+                onPhaseChange={handlePhaseChange}
+                compact
+              />
+              
               {/* Save Status */}
               <div className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
                 {isSaving ? (
@@ -345,10 +357,27 @@ function BuilderChatModal({
   // Initialize conversation
   useEffect(() => {
     if (messages.length === 0) {
-      setMessages([{
-        role: "assistant",
-        content: "Welcome to Story Builder! 🎭\n\nI'm here to help you explore your story through an interactive conversation. We can discuss:\n\n• **Themes** - Core ideas and messages\n• **Conflicts** - Internal and external struggles\n• **Plot Points** - Key story events\n• **Emotional Beats** - Character feelings and growth\n• **Comedy** - Humor and lighthearted moments\n• **Events** - Specific scenes or situations\n\nJust share what's on your mind, and I'll help you develop it into something concrete. When we land on something you like, I'll help you save it as a scenario.\n\nWhat would you like to explore?"
-      }]);
+      // Check for seeded prompt from health dashboard
+      const seededPrompt = localStorage.getItem('storyroom-seeded-prompt');
+      
+      if (seededPrompt) {
+        // Clear the seeded prompt
+        localStorage.removeItem('storyroom-seeded-prompt');
+        
+        // Set it as the initial input
+        setInput(seededPrompt);
+        
+        // Show welcome message
+        setMessages([{
+          role: "assistant",
+          content: "Welcome to Story Builder! 🎭\n\nI see you have a specific question. Let's dive right in!"
+        }]);
+      } else {
+        setMessages([{
+          role: "assistant",
+          content: "Welcome to Story Builder! 🎭\n\nI'm here to help you explore your story through an interactive conversation. We can discuss:\n\n• **Themes** - Core ideas and messages\n• **Conflicts** - Internal and external struggles\n• **Plot Points** - Key story events\n• **Emotional Beats** - Character feelings and growth\n• **Comedy** - Humor and lighthearted moments\n• **Events** - Specific scenes or situations\n\nJust share what's on your mind, and I'll help you develop it into something concrete. When we land on something you like, I'll help you save it as a scenario.\n\nWhat would you like to explore?"
+        }]);
+      }
     }
   }, []);
 

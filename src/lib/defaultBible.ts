@@ -9,4 +9,5 @@ export const defaultBible: StoryBible = {
   plot: [],
   research: [],
   builderSessions: [],
+  phase: "discovery", // Start in discovery phase
 };

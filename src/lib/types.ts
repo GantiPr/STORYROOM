@@ -1,5 +1,7 @@
 export type Mode = "builder" | "develop" | "research" | "critique";
 
+export type StoryPhase = "discovery" | "structure" | "development" | "revision";
+
 export type BuilderSession = {
   id: string; // e.g. "BS1"
   title: string;
@@ -73,6 +75,7 @@ export type StoryBible = {
   plot: PlotBeat[];
   research: ResearchNote[];
   builderSessions?: BuilderSession[];
+  phase?: StoryPhase; // Current workflow phase
 };
 
 export type Project = {

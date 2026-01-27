@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { getPhaseGuidance } from "@/lib/storyPhases";
+import type { StoryPhase } from "@/lib/types";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -11,6 +13,7 @@ export async function POST(req: NextRequest) {
     console.log("Builder chat request received");
     console.log("Messages count:", body.messages?.length);
     console.log("Story context:", body.storyContext?.title);
+    console.log("Story phase:", body.storyContext?.phase);
     
     const { messages, storyContext } = body;
 
@@ -21,7 +24,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const phase: StoryPhase = storyContext?.phase || "discovery";
+    const phaseGuidance = getPhaseGuidance(phase);
+
     const systemPrompt = `You are a creative story development assistant who challenges writers to think deeper and explore alternatives.
+
+${phaseGuidance}
 
 STORY CONTEXT:
 - Title: ${storyContext.title || "Untitled"}

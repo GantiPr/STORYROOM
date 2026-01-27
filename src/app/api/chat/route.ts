@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { z } from "zod";
 import { nanoid } from "nanoid";
-import type { Mode, StoryBible, ChatMessage, ResearchNote, ResearchSource } from "@/lib/types";
+import type { Mode, StoryBible, ChatMessage, ResearchNote, ResearchSource, StoryPhase } from "@/lib/types";
 import { fetchAndExtractReadableText } from "@/lib/webExtract";
 import { tavilySearch } from "@/lib/webSearch";
+import { getPhaseGuidance } from "@/lib/storyPhases";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -19,9 +20,13 @@ const BodySchema = z.object({
   bible: z.any(),
 });
 
-function systemPrompt(mode: Mode) {
+function systemPrompt(mode: Mode, phase: StoryPhase = "discovery") {
+  const phaseGuidance = getPhaseGuidance(phase);
+  
   return `
 You are Storyroom, a creative writing partner who challenges writers to think deeper.
+
+${phaseGuidance}
 
 YOUR PERSONALITY:
 - You're thoughtful, curious, and occasionally skeptical
@@ -228,7 +233,7 @@ Rules:
       model: "gpt-4.1-mini",
       temperature: mode === "builder" ? 0.9 : 0.5,
       messages: [
-        { role: "system", content: systemPrompt(mode) },
+        { role: "system", content: systemPrompt(mode, bible.phase) },
         {
           role: "system",
           content: `Current bible (canon): ${JSON.stringify(bible)}`,

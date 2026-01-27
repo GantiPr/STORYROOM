@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import type { StoryBible } from "@/lib/types";
+import type { StoryBible, StoryPhase } from "@/lib/types";
+import { getPhaseInfo } from "@/lib/storyPhases";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -12,25 +13,48 @@ export async function POST(request: Request) {
 
     // Build comprehensive context from all story elements
     const context = buildStoryContext(bible);
+    const phase: StoryPhase = bible.phase || "discovery";
+    const phaseInfo = getPhaseInfo(phase);
 
-    const systemPrompt = `You are an expert story analyst and editor. Analyze the provided story content and identify:
+    const systemPrompt = `You are an expert story analyst and editor. Analyze the provided story content with a focus appropriate to the current story phase.
 
-1. STRENGTHS: What's working well (character depth, unique concepts, compelling conflicts, etc.). When mentioning specific elements, include the character name, research topic, or session title in brackets like [Character: John] or [Research: Medieval Warfare].
+CURRENT PHASE: ${phaseInfo.name} (${phaseInfo.icon})
+${phaseInfo.description}
 
-2. GAPS: Missing elements that would strengthen the story (underdeveloped areas, missing motivations, unclear stakes, etc.). Be specific about which characters or areas need work.
+PHASE-SPECIFIC ANALYSIS FOCUS:
+${phaseInfo.focus.map(f => `- ${f}`).join('\n')}
 
-3. INCONSISTENCIES: Contradictions or logical issues in the story elements. Reference specific characters or content by name.
+${phase === "discovery" ? `
+In DISCOVERY phase, focus on:
+- **Strengths**: Clarity of concept, uniqueness, potential
+- **Gaps**: Unclear premise, vague themes, missing core elements
+- **Inconsistencies**: Contradictory concepts or unclear direction
+- **Similarities**: Derivative concepts or overused tropes
+- **Recommendations**: Ways to clarify and strengthen the core idea
+` : phase === "structure" ? `
+In STRUCTURE phase, focus on:
+- **Strengths**: Solid plot architecture, clear beats, good pacing
+- **Gaps**: Missing plot points, weak structure, unclear arcs
+- **Inconsistencies**: Plot holes, illogical progression, broken cause-effect
+- **Similarities**: Overused plot structures or predictable beats
+- **Recommendations**: Structural improvements and alternative frameworks
+` : phase === "development" ? `
+In DEVELOPMENT phase, focus on:
+- **Strengths**: Deep characterization, rich details, authentic world
+- **Gaps**: Shallow characters, missing details, underdeveloped relationships
+- **Inconsistencies**: Character behavior contradictions, world-building issues
+- **Similarities**: Stock characters or clichéd relationships
+- **Recommendations**: Ways to add depth, complexity, and authenticity
+` : `
+In REVISION phase, focus on:
+- **Strengths**: What's polished and working well
+- **Gaps**: Unresolved threads, missing payoffs, loose ends
+- **Inconsistencies**: Any remaining contradictions or logic issues
+- **Similarities**: Elements that still feel too similar to other works
+- **Recommendations**: Final polish, cuts, and tightening opportunities
+`}
 
-4. SIMILARITIES: Potential similarities to existing popular media (movies, books, TV shows) that might be too close. Be specific about what elements are similar.
-
-5. RECOMMENDATIONS: Specific, actionable suggestions to improve the story. Reference which characters, research areas, or builder sessions to focus on.
-
-Be constructive, specific, and honest. Focus on storytelling fundamentals: character arcs, conflict, stakes, theme coherence, and originality.
-
-IMPORTANT: When referencing specific story elements, use this format:
-- For characters: [Character: Name]
-- For research: [Research: Topic/Question]
-- For builder sessions: [Builder: Session Title]
+When mentioning specific elements, include references like [Character: Name], [Research: Topic], or [Builder: Session Title] so they can be clicked.
 
 Return your analysis as a JSON object with these exact keys: strengths, gaps, inconsistencies, similarities, recommendations. Each should be an array of strings.`;
 

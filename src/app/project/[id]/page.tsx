@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { useProjects } from "@/hooks/useProjects";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import type { Project } from "@/lib/types";
+import type { Project, StoryPhase } from "@/lib/types";
+import { PhaseSelector } from "@/components/PhaseSelector";
+import { calculateStoryHealth, type HealthIndicator, type NextAction } from "@/lib/storyHealth";
 
 export default function ProjectPage() {
   const { projects, activeProjectId, setActiveProjectId, isLoaded, updateProjectBible } = useProjects();
@@ -28,6 +30,24 @@ export default function ProjectPage() {
     setActiveProjectId(projectId);
   }, [projectId, projects, isLoaded, router, setActiveProjectId]);
 
+  const handlePhaseChange = (phase: StoryPhase) => {
+    if (!project) return;
+    
+    const updatedBible = { ...project.bible, phase };
+    updateProjectBible(projectId, updatedBible);
+    setProject({ ...project, bible: updatedBible });
+  };
+
+  const handleActionClick = (action: NextAction) => {
+    // Store the prompt in localStorage if provided
+    if (action.prompt) {
+      localStorage.setItem('storyroom-seeded-prompt', action.prompt);
+    }
+    
+    // Navigate to the target page
+    router.push(`/${action.targetPage}`);
+  };
+
   if (!isLoaded || !project) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 text-white flex items-center justify-center">
@@ -40,6 +60,32 @@ export default function ProjectPage() {
   const hasContent = bible.characters.length > 0 || 
                      bible.research.length > 0 || 
                      (bible.builderSessions && bible.builderSessions.length > 0);
+
+  const health = calculateStoryHealth(bible);
+
+  const getStatusColor = (status: HealthIndicator['status']) => {
+    switch (status) {
+      case 'good': return 'text-green-400';
+      case 'warning': return 'text-yellow-400';
+      case 'needs-attention': return 'text-red-400';
+    }
+  };
+
+  const getStatusIcon = (status: HealthIndicator['status']) => {
+    switch (status) {
+      case 'good': return '🟢';
+      case 'warning': return '🟡';
+      case 'needs-attention': return '🔴';
+    }
+  };
+
+  const getPriorityColor = (priority: NextAction['priority']) => {
+    switch (priority) {
+      case 'high': return 'border-red-600/50 bg-red-900/20';
+      case 'medium': return 'border-yellow-600/50 bg-yellow-900/20';
+      case 'low': return 'border-blue-600/50 bg-blue-900/20';
+    }
+  };
 
   const generateSummary = async () => {
     setIsGeneratingSummary(true);
@@ -139,11 +185,12 @@ export default function ProjectPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Story Summary */}
+            {/* Main Content - Story Health Dashboard */}
             <div className="lg:col-span-2 space-y-6">
+              {/* Full Story Summary */}
               <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-2xl font-semibold text-white">Story Summary</h2>
+                  <h2 className="text-2xl font-semibold text-white">Full Story Summary</h2>
                   <button
                     onClick={generateSummary}
                     disabled={isGeneratingSummary}
@@ -167,10 +214,10 @@ export default function ProjectPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-12">
-                    <div className="text-5xl mb-4">📖</div>
+                  <div className="text-center py-8">
+                    <div className="text-4xl mb-3">📖</div>
                     <p className="text-zinc-400 mb-4">
-                      Generate an AI summary of your story based on all your work
+                      Generate an AI-powered narrative summary of your entire story
                     </p>
                     <button
                       onClick={generateSummary}
@@ -179,6 +226,75 @@ export default function ProjectPage() {
                     >
                       Generate Summary
                     </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Story Health Indicators */}
+              <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 p-6">
+                <h2 className="text-2xl font-semibold text-white mb-6">Story Health</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {health.indicators.map((indicator) => (
+                    <div
+                      key={indicator.name}
+                      className="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold text-white">{indicator.name}</h3>
+                        <span className="text-2xl">{getStatusIcon(indicator.status)}</span>
+                      </div>
+                      <div className="mb-3">
+                        <div className="h-2 bg-zinc-700 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all ${
+                              indicator.status === 'good' ? 'bg-green-500' :
+                              indicator.status === 'warning' ? 'bg-yellow-500' :
+                              'bg-red-500'
+                            }`}
+                            style={{ width: `${indicator.score}%` }}
+                          />
+                        </div>
+                      </div>
+                      <p className={`text-sm ${getStatusColor(indicator.status)}`}>
+                        {indicator.reason}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Suggested Next Actions */}
+              <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 p-6">
+                <h2 className="text-2xl font-semibold text-white mb-6">What to Work On Next</h2>
+                {health.nextActions.length > 0 ? (
+                  <div className="space-y-3">
+                    {health.nextActions.map((action) => (
+                      <button
+                        key={action.id}
+                        onClick={() => handleActionClick(action)}
+                        className={`w-full text-left p-4 rounded-lg border transition-all hover:scale-[1.02] ${getPriorityColor(action.priority)}`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-white mb-1">{action.title}</h3>
+                            <p className="text-sm text-zinc-400">{action.description}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {action.priority === 'high' && (
+                              <span className="px-2 py-1 bg-red-600/20 text-red-400 text-xs font-medium rounded">
+                                High Priority
+                              </span>
+                            )}
+                            <span className="text-zinc-400">→</span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="text-4xl mb-3">✨</div>
+                    <p className="text-zinc-400">Your story is in great shape! Keep developing.</p>
                   </div>
                 )}
               </div>
@@ -203,6 +319,12 @@ export default function ProjectPage() {
             {/* Navigation */}
             <div className="space-y-4">
               <h3 className="text-xl font-semibold text-white mb-4">Workspace</h3>
+              
+              {/* Phase Selector */}
+              <PhaseSelector 
+                currentPhase={bible.phase || "discovery"}
+                onPhaseChange={handlePhaseChange}
+              />
               
               <Link
                 href="/builder"
