@@ -62,6 +62,7 @@ Return a JSON object with:
       content: response.content,
       sourceResearchId: researchId,
       sourceCitation: citation,
+      reasoning: response.reasoning,
       createdAt: new Date().toISOString(),
       appliedTo: appliedTo || undefined,
     };

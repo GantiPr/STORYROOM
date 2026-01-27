@@ -27,6 +27,11 @@ export async function POST(req: NextRequest) {
     const phase: StoryPhase = storyContext?.phase || "discovery";
     const phaseGuidance = getPhaseGuidance(phase);
 
+    // Build canon context if available
+    const canonContext = storyContext.canon && storyContext.canon.length > 0
+      ? `\n\nESTABLISHED STORY CANON (locked rules - flag conflicts):\n${storyContext.canon.map((c: any) => `- ${c.content} [${c.type}]`).join('\n')}`
+      : "";
+
     const systemPrompt = `You are a creative story development assistant who challenges writers to think deeper and explore alternatives.
 
 ${phaseGuidance}
@@ -36,7 +41,16 @@ STORY CONTEXT:
 - Premise: ${storyContext.premise || "Not set"}
 - Genre: ${storyContext.genre || "Not set"}
 - Themes: ${storyContext.themes?.join(", ") || "None"}
-- Characters: ${storyContext.characters?.map((c: any) => `${c.name} (${c.role})`).join(", ") || "None"}
+- Characters: ${storyContext.characters?.map((c: any) => `${c.name} (${c.role})`).join(", ") || "None"}${canonContext}
+
+${canonContext ? `\n⚠️ CANON GUARDRAILS:
+If the writer suggests something that contradicts established canon, gently point it out:
+"I notice this might conflict with [canon rule]. Do you want to:
+A) Revise the canon
+B) Adjust this idea to fit
+C) Proceed anyway and resolve it later"
+
+This builds trust by showing you're tracking consistency.` : ""}
 
 YOUR PERSONALITY:
 You're a thoughtful creative partner who:

@@ -1232,12 +1232,15 @@ function ResearchNoteDetail({
         {/* Canon Entries */}
         {editedNote.canonEntries && editedNote.canonEntries.length > 0 && (
           <div>
-            <label className="block text-sm font-medium text-zinc-300 mb-2">
-              ⚡ Story Canon ({editedNote.canonEntries.length})
+            <label className="block text-sm font-medium text-zinc-300 mb-2 flex items-center gap-2">
+              <span>⚡ Story Canon ({editedNote.canonEntries.length})</span>
+              <span className="text-xs px-2 py-0.5 bg-purple-600/20 text-purple-400 rounded border border-purple-600/30">
+                🔒 Locked
+              </span>
             </label>
             <div className="space-y-3">
               {editedNote.canonEntries.map((canon) => (
-                <div key={canon.id} className="p-4 bg-gradient-to-br from-purple-900/20 to-blue-900/20 rounded-lg border border-purple-700/30">
+                <div key={canon.id} className="p-4 bg-gradient-to-br from-purple-900/30 to-blue-900/30 rounded-lg border-2 border-purple-600/50 shadow-lg group relative">
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-xl">
@@ -1246,16 +1249,32 @@ function ResearchNoteDetail({
                         {canon.type === 'plot-constraint' && '⚡'}
                         {canon.type === 'background-texture' && '✨'}
                       </span>
-                      <span className="text-xs px-2 py-1 rounded-full bg-purple-600/30 text-purple-300 capitalize">
+                      <span className="text-xs px-2 py-1 rounded-full bg-purple-600/40 text-purple-200 capitalize font-semibold">
                         {canon.type.replace('-', ' ')}
                       </span>
                     </div>
-                    <span className="text-xs text-zinc-500">{canon.sourceCitation}</span>
+                    <div className="flex items-center gap-2">
+                      {canon.reasoning && (
+                        <div className="relative group/tooltip">
+                          <button className="text-zinc-400 hover:text-zinc-300 transition-colors">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </button>
+                          <div className="absolute right-0 top-6 w-64 p-3 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-10">
+                            <p className="text-xs text-zinc-300 font-semibold mb-1">Why this matters:</p>
+                            <p className="text-xs text-zinc-400">{canon.reasoning}</p>
+                          </div>
+                        </div>
+                      )}
+                      <span className="text-xs text-zinc-500 font-mono">{canon.sourceCitation}</span>
+                    </div>
                   </div>
-                  <p className="text-sm text-zinc-200 leading-relaxed">{canon.content}</p>
+                  <p className="text-sm text-zinc-100 leading-relaxed font-medium">{canon.content}</p>
                   {canon.appliedTo && (
-                    <div className="mt-2 text-xs text-purple-400">
-                      Applied to: {bible.characters.find(c => c.id === canon.appliedTo)?.name || canon.appliedTo}
+                    <div className="mt-2 text-xs text-purple-300 flex items-center gap-1">
+                      <span>→</span>
+                      <span>Applied to: {bible.characters.find(c => c.id === canon.appliedTo)?.name || canon.appliedTo}</span>
                     </div>
                   )}
                 </div>

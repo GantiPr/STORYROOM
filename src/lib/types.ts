@@ -63,6 +63,7 @@ export type CanonEntry = {
   content: string;
   sourceResearchId: string; // Links back to research note
   sourceCitation: string; // e.g., "[S1]"
+  reasoning?: string; // Why this matters for the story
   createdAt: string;
   appliedTo?: string; // Character ID, plot beat ID, etc.
 };
@@ -120,4 +121,34 @@ export type Project = {
 export type ChatMessage = {
   role: "user" | "assistant" | "system";
   content: string;
+};
+
+export type TimelineEvent = {
+  id: string;
+  title: string;
+  description: string;
+  timestamp: string; // "Year 1, Day 5" or "Chapter 3" or "Age 25"
+  relativeTime?: number; // For sorting (days, years, etc.)
+  involvedCharacters: string[]; // Character IDs
+  sourceType: "plot" | "builder" | "character-arc" | "research";
+  sourceId: string;
+  causedBy?: string[]; // Event IDs that caused this
+  causes?: string[]; // Event IDs this causes
+};
+
+export type TimelineIssue = {
+  id: string;
+  type: "temporal-contradiction" | "unmotivated-reversal" | "age-inconsistency" | "cause-effect-break";
+  severity: "critical" | "warning" | "minor";
+  title: string;
+  description: string;
+  affectedEvents: string[]; // Event IDs
+  affectedCharacters?: string[]; // Character IDs
+  suggestion?: string;
+};
+
+export type ConsistencyTimeline = {
+  events: TimelineEvent[];
+  issues: TimelineIssue[];
+  generatedAt: string;
 };

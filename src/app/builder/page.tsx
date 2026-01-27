@@ -405,7 +405,9 @@ function BuilderChatModal({
             premise: storyContext.premise,
             genre: storyContext.genre,
             themes: storyContext.themes,
-            characters: storyContext.characters.map((c: any) => ({ id: c.id, name: c.name, role: c.role }))
+            phase: storyContext.phase,
+            characters: storyContext.characters.map((c: any) => ({ id: c.id, name: c.name, role: c.role })),
+            canon: storyContext.canon || []
           }
         })
       });
@@ -556,10 +558,19 @@ function BuilderChatModal({
               placeholder="Session Title"
               className="text-2xl font-bold text-white bg-transparent border-none focus:outline-none placeholder-zinc-600"
             />
-            <p className="text-sm text-zinc-400 mt-1">
-              {messages.length} messages
-              {sessionSummary && " • Summary generated"}
-              {linkedCharacters.length > 0 && ` • ${linkedCharacters.length} characters linked`}
+            <p className="text-sm text-zinc-400 mt-1 flex items-center gap-2 flex-wrap">
+              <span>{messages.length} messages</span>
+              {sessionSummary && <><span>•</span><span>Summary generated</span></>}
+              {linkedCharacters.length > 0 && <><span>•</span><span>{linkedCharacters.length} characters linked</span></>}
+              {storyContext.canon && storyContext.canon.length > 0 && (
+                <>
+                  <span>•</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-600/20 text-purple-400 rounded text-xs border border-purple-600/30">
+                    <span>🔒</span>
+                    <span>{storyContext.canon.length} canon rules active</span>
+                  </span>
+                </>
+              )}
             </p>
             
             {/* Character Linking */}

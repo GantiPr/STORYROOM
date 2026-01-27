@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { useProjects } from "@/hooks/useProjects";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import type { Project, StoryPhase } from "@/lib/types";
+import type { Project, StoryPhase, ConsistencyTimeline } from "@/lib/types";
 import { PhaseSelector } from "@/components/PhaseSelector";
 import { calculateStoryHealth, type HealthIndicator, type NextAction } from "@/lib/storyHealth";
+import { TimelineView } from "@/components/TimelineView";
 
 export default function ProjectPage() {
   const { projects, activeProjectId, setActiveProjectId, isLoaded, updateProjectBible } = useProjects();
@@ -16,6 +17,9 @@ export default function ProjectPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [summary, setSummary] = useState<string>("");
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [timeline, setTimeline] = useState<ConsistencyTimeline | null>(null);
+  const [isGeneratingTimeline, setIsGeneratingTimeline] = useState(false);
+  const [activeTab, setActiveTab] = useState<"dashboard" | "timeline">("dashboard");
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -108,6 +112,27 @@ export default function ProjectPage() {
     }
   };
 
+  const generateTimeline = async () => {
+    setIsGeneratingTimeline(true);
+    try {
+      const response = await fetch("/api/timeline", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bible })
+      });
+
+      if (!response.ok) throw new Error("Failed to generate timeline");
+
+      const data = await response.json();
+      setTimeline(data.timeline);
+    } catch (error) {
+      console.error("Timeline error:", error);
+      alert("Failed to generate timeline. Please try again.");
+    } finally {
+      setIsGeneratingTimeline(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 text-white">
       <div className="container mx-auto px-6 py-8 max-w-7xl">
@@ -131,6 +156,32 @@ export default function ProjectPage() {
             </div>
           </div>
         </div>
+
+        {/* Tab Navigation */}
+        {hasContent && (
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setActiveTab("dashboard")}
+              className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                activeTab === "dashboard"
+                  ? "bg-blue-600 text-white"
+                  : "bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800"
+              }`}
+            >
+              📊 Dashboard
+            </button>
+            <button
+              onClick={() => setActiveTab("timeline")}
+              className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                activeTab === "timeline"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-zinc-800/50 text-zinc-400 hover:bg-zinc-800"
+              }`}
+            >
+              ⏱️ Timeline
+            </button>
+          </div>
+        )}
 
         {/* Content */}
         {!hasContent ? (
@@ -181,6 +232,84 @@ export default function ProjectPage() {
                   <div className="text-sm text-zinc-400">Analyze your story</div>
                 </Link>
               </div>
+            </div>
+          </div>
+        ) : activeTab === "timeline" ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Timeline View */}
+            <div className="lg:col-span-2">
+              <TimelineView
+                timeline={timeline}
+                isGenerating={isGeneratingTimeline}
+                onGenerate={generateTimeline}
+              />
+            </div>
+
+            {/* Navigation Sidebar */}
+            <div className="space-y-4">
+              <h3 className="text-xl font-semibold text-white mb-4">Workspace</h3>
+              
+              {/* Phase Selector */}
+              <PhaseSelector 
+                currentPhase={bible.phase || "discovery"}
+                onPhaseChange={handlePhaseChange}
+              />
+              
+              <Link
+                href="/builder"
+                className="block p-6 bg-blue-900/20 hover:bg-blue-900/30 border border-blue-700/30 rounded-xl transition-all group"
+              >
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="text-3xl">🎭</div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-white group-hover:text-blue-300 transition-colors">Builder</div>
+                    <div className="text-xs text-zinc-500">{bible.builderSessions?.length || 0} sessions</div>
+                  </div>
+                </div>
+                <div className="text-sm text-zinc-400">Explore themes, conflicts, and scenarios</div>
+              </Link>
+              
+              <Link
+                href="/characters"
+                className="block p-6 bg-purple-900/20 hover:bg-purple-900/30 border border-purple-700/30 rounded-xl transition-all group"
+              >
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="text-3xl">👥</div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-white group-hover:text-purple-300 transition-colors">Characters</div>
+                    <div className="text-xs text-zinc-500">{bible.characters.length} characters</div>
+                  </div>
+                </div>
+                <div className="text-sm text-zinc-400">Create and develop character arcs</div>
+              </Link>
+              
+              <Link
+                href="/research"
+                className="block p-6 bg-emerald-900/20 hover:bg-emerald-900/30 border border-emerald-700/30 rounded-xl transition-all group"
+              >
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="text-3xl">📚</div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-white group-hover:text-emerald-300 transition-colors">Research</div>
+                    <div className="text-xs text-zinc-500">{bible.research.length} notes</div>
+                  </div>
+                </div>
+                <div className="text-sm text-zinc-400">Gather authentic details and sources</div>
+              </Link>
+              
+              <Link
+                href="/critique"
+                className="block p-6 bg-gradient-to-br from-red-900/20 to-orange-900/20 hover:from-red-900/30 hover:to-orange-900/30 border border-red-700/30 rounded-xl transition-all group"
+              >
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="text-3xl">🔍</div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-white group-hover:text-red-300 transition-colors">Critique</div>
+                    <div className="text-xs text-zinc-500">AI Analysis</div>
+                  </div>
+                </div>
+                <div className="text-sm text-zinc-400">Identify strengths and gaps</div>
+              </Link>
             </div>
           </div>
         ) : (
