@@ -17,6 +17,8 @@ export type ResearchNote = {
     type: "character" | "plot" | "world";
     id: string;
   }[];
+  summary?: string; // AI-generated session summary
+  tags?: string[]; // Primary keys/tags for organizing research
 };
 
 export type Character = {

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export async function POST(req: NextRequest) {
@@ -30,12 +30,15 @@ When providing information:
 
 Focus on helping the writer build a believable, well-researched story world.`;
 
-    const stream = await anthropic.messages.stream({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 4096,
+    const stream = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...messages
+      ],
+      stream: true,
       temperature: 0.7,
-      system: systemPrompt,
-      messages: messages,
+      max_tokens: 4096,
     });
 
     const encoder = new TextEncoder();
@@ -43,8 +46,8 @@ Focus on helping the writer build a believable, well-researched story world.`;
       async start(controller) {
         try {
           for await (const chunk of stream) {
-            if (chunk.type === "content_block_delta" && chunk.delta.type === "text_delta") {
-              const text = chunk.delta.text;
+            const text = chunk.choices[0]?.delta?.content || "";
+            if (text) {
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
             }
           }

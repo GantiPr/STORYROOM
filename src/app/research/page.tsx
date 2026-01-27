@@ -5,10 +5,23 @@ import { useBible } from "@/hooks/useBible";
 import type { ResearchNote } from "@/lib/types";
 import Link from "next/link";
 
+type ParsedPoint = {
+  id: string;
+  content: string;
+  isSelected: boolean;
+};
+
+type AgreedNote = {
+  content: string;
+  sources: Array<{ id: string; domain: string; url: string; title: string }>;
+  linkedCharacters: string[];
+};
+
 type ChatMessage = {
   role: "user" | "assistant";
   content: string;
   sources?: Array<{ id: string; domain: string; url: string; title: string }>;
+  parsedPoints?: ParsedPoint[];
 };
 
 export default function ResearchPage() {
@@ -16,6 +29,7 @@ export default function ResearchPage() {
   const [selectedNote, setSelectedNote] = useState<ResearchNote | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [showResearchChat, setShowResearchChat] = useState(false);
+  const [continueResearchNote, setContinueResearchNote] = useState<ResearchNote | null>(null);
 
   if (!isLoaded) {
     return (
@@ -26,6 +40,12 @@ export default function ResearchPage() {
   }
 
   const handleCreateNote = () => {
+    setContinueResearchNote(null);
+    setShowResearchChat(true);
+  };
+
+  const handleContinueResearch = (note: ResearchNote) => {
+    setContinueResearchNote(note);
     setShowResearchChat(true);
   };
 
@@ -159,40 +179,55 @@ export default function ResearchPage() {
                   bible.research.map((note) => (
                     <div
                       key={note.id}
-                      onClick={() => {
-                        if (selectedNote?.id === note.id) {
-                          setSelectedNote(null);
-                        } else {
-                          setSelectedNote(note);
-                          setIsCreating(false);
-                        }
-                      }}
                       className={`group p-4 rounded-xl border cursor-pointer transition-all ${
                         selectedNote?.id === note.id
                           ? "bg-gradient-to-br from-emerald-900/40 to-emerald-800/40 border-emerald-600/50 shadow-lg shadow-emerald-900/20"
                           : "bg-zinc-800/30 border-zinc-700/50 hover:bg-zinc-800/50 hover:border-zinc-600/50"
                       }`}
                     >
-                      <h3 className="font-semibold text-white group-hover:text-emerald-400 transition-colors line-clamp-2">
-                        {note.question || "Untitled Research"}
-                      </h3>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-xs text-zinc-500">
-                          {new Date(note.createdAt).toLocaleDateString()}
-                        </span>
-                        <span className="text-xs text-zinc-500">•</span>
-                        <span className="text-xs text-zinc-500">
-                          {note.bullets.length} notes
-                        </span>
-                        {note.sources.length > 0 && (
-                          <>
-                            <span className="text-xs text-zinc-500">•</span>
-                            <span className="text-xs text-zinc-500">
-                              {note.sources.length} sources
-                            </span>
-                          </>
+                      <div onClick={() => {
+                        if (selectedNote?.id === note.id) {
+                          setSelectedNote(null);
+                        } else {
+                          setSelectedNote(note);
+                          setIsCreating(false);
+                        }
+                      }}>
+                        <h3 className="font-semibold text-white group-hover:text-emerald-400 transition-colors line-clamp-2">
+                          {note.question || "Untitled Research"}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs text-zinc-500">
+                            {new Date(note.createdAt).toLocaleDateString()}
+                          </span>
+                          <span className="text-xs text-zinc-500">•</span>
+                          <span className="text-xs text-zinc-500">
+                            {note.bullets.length} notes
+                          </span>
+                          {note.sources.length > 0 && (
+                            <>
+                              <span className="text-xs text-zinc-500">•</span>
+                              <span className="text-xs text-zinc-500">
+                                {note.sources.length} sources
+                              </span>
+                            </>
+                          )}
+                        </div>
+                        {note.summary && (
+                          <p className="text-xs text-zinc-400 mt-2 line-clamp-2 italic">
+                            {note.summary}
+                          </p>
                         )}
                       </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleContinueResearch(note);
+                        }}
+                        className="mt-3 w-full px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-xs font-medium transition-all"
+                      >
+                        🔄 Continue Research
+                      </button>
                     </div>
                   ))
                 )}
@@ -239,10 +274,14 @@ export default function ResearchPage() {
       {/* Research Chat Modal */}
       {showResearchChat && (
         <ResearchChatModal
-          onClose={() => setShowResearchChat(false)}
+          onClose={() => {
+            setShowResearchChat(false);
+            setContinueResearchNote(null);
+          }}
           onSave={handleSaveNoteFromChat}
           nextNoteId={`R${bible.research.length + 1}`}
           storyContext={bible}
+          existingNote={continueResearchNote}
         />
       )}
     </div>
@@ -255,26 +294,105 @@ function ResearchChatModal({
   onClose,
   onSave,
   nextNoteId,
-  storyContext
+  storyContext,
+  existingNote
 }: {
   onClose: () => void;
   onSave: (note: ResearchNote) => void;
   nextNoteId: string;
   storyContext: any;
+  existingNote?: ResearchNote | null;
 }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: "assistant",
-      content: "I'm your research assistant. I have access to scholarly sources and can help you investigate topics for your story. What would you like to research?"
+  const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    if (existingNote) {
+      // Reconstruct conversation from existing note
+      return [
+        {
+          role: "assistant",
+          content: "I'm continuing our previous research session. Here's what we discussed:\n\n" + 
+                   (existingNote.summary || existingNote.bullets.join('\n\n')) +
+                   "\n\nWhat else would you like to investigate?"
+        }
+      ];
     }
-  ]);
+    return [
+      {
+        role: "assistant",
+        content: "I'm your research assistant. I have access to scholarly sources and can help you investigate topics for your story. What would you like to research?"
+      }
+    ];
+  });
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [agreedNotes, setAgreedNotes] = useState<string[]>([]);
-  const [sources, setSources] = useState<Array<{ id: string; domain: string; url: string; title: string }>>([]);
-  const [linkedCharacters, setLinkedCharacters] = useState<string[]>([]);
-  const [showLinkMenu, setShowLinkMenu] = useState(false);
+  const [agreedNotes, setAgreedNotes] = useState<AgreedNote[]>(() => {
+    if (existingNote) {
+      // Pre-populate with existing notes
+      return existingNote.bullets.map(bullet => ({
+        content: bullet,
+        sources: existingNote.sources,
+        linkedCharacters: existingNote.linkedTo?.filter(l => l.type === "character").map(l => l.id) || []
+      }));
+    }
+    return [];
+  });
+  const [allSources, setAllSources] = useState<Array<{ id: string; domain: string; url: string; title: string }>>(() => {
+    return existingNote?.sources || [];
+  });
+  const [sessionSummary, setSessionSummary] = useState<string>(existingNote?.summary || "");
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [tags, setTags] = useState<string[]>(existingNote?.tags || []);
+  const [newTag, setNewTag] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Parse AI response into individual selectable points
+  const parseIntoPoints = (content: string): ParsedPoint[] => {
+    const points: ParsedPoint[] = [];
+    let idCounter = 0;
+    
+    // Extract bullet points (-, •, *)
+    const bulletMatches = content.match(/^[\s]*[-•*]\s+(.+)$/gm);
+    if (bulletMatches && bulletMatches.length > 0) {
+      bulletMatches.forEach(match => {
+        const cleaned = match.replace(/^[\s]*[-•*]\s+/, '').trim();
+        if (cleaned.length > 10) {
+          points.push({
+            id: `point-${idCounter++}`,
+            content: cleaned,
+            isSelected: false
+          });
+        }
+      });
+    }
+    
+    // Extract numbered points (1., 2., etc.)
+    const numberedMatches = content.match(/^[\s]*\d+\.\s+(.+)$/gm);
+    if (numberedMatches && numberedMatches.length > 0) {
+      numberedMatches.forEach(match => {
+        const cleaned = match.replace(/^[\s]*\d+\.\s+/, '').trim();
+        if (cleaned.length > 10) {
+          points.push({
+            id: `point-${idCounter++}`,
+            content: cleaned,
+            isSelected: false
+          });
+        }
+      });
+    }
+    
+    // If no structured points, split by paragraphs
+    if (points.length === 0) {
+      const paragraphs = content.split(/\n\n+/).map(p => p.trim()).filter(p => p.length > 30);
+      paragraphs.forEach(para => {
+        points.push({
+          id: `point-${idCounter++}`,
+          content: para,
+          isSelected: false
+        });
+      });
+    }
+    
+    return points;
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -312,7 +430,7 @@ function ResearchChatModal({
             content: m.content
           })),
           researchContext: {
-            agreedNotes,
+            agreedNotes: agreedNotes.map(n => n.content),
             sources: foundSources.slice(0, 5)
           },
           storyContext: {
@@ -362,9 +480,22 @@ function ResearchChatModal({
         }
       }
 
+      // Parse the complete response into selectable points
+      if (assistantMessage) {
+        const parsedPoints = parseIntoPoints(assistantMessage);
+        setMessages(prev => {
+          const updated = [...prev];
+          const lastMsg = updated[updated.length - 1];
+          if (lastMsg && lastMsg.role === "assistant") {
+            lastMsg.parsedPoints = parsedPoints;
+          }
+          return updated;
+        });
+      }
+
       // Add sources to the collection
       if (foundSources.length > 0) {
-        setSources(prev => {
+        setAllSources(prev => {
           const newSources = foundSources.slice(0, 3).filter(
             (s: any) => !prev.some(existing => existing.url === s.url)
           );
@@ -383,9 +514,14 @@ function ResearchChatModal({
     }
   };
 
-  const handleAgreeToNote = (content: string) => {
-    if (!agreedNotes.includes(content)) {
-      setAgreedNotes(prev => [...prev, content]);
+  const handleAgreeToNote = (message: ChatMessage, linkedChars: string[] = []) => {
+    const noteExists = agreedNotes.some(n => n.content === message.content);
+    if (!noteExists) {
+      setAgreedNotes(prev => [...prev, {
+        content: message.content,
+        sources: message.sources || [],
+        linkedCharacters: linkedChars
+      }]);
     }
   };
 
@@ -399,32 +535,128 @@ function ResearchChatModal({
     const firstUserMessage = messages.find(m => m.role === "user");
     const question = firstUserMessage?.content || "Research Session";
 
+    // Collect all unique sources
+    const allNoteSources = agreedNotes.flatMap(n => n.sources);
+    const uniqueSources = allNoteSources.filter((s, idx, arr) => 
+      arr.findIndex(x => x.url === s.url) === idx
+    );
+
+    // Collect all unique linked characters
+    const allLinkedChars = [...new Set(agreedNotes.flatMap(n => n.linkedCharacters))];
+
     const newNote: ResearchNote = {
       id: nextNoteId,
       question,
-      bullets: agreedNotes,
-      sources: sources.map((s, idx) => ({
+      bullets: agreedNotes.map(n => n.content),
+      sources: uniqueSources.map((s, idx) => ({
         id: `S${idx + 1}`,
         domain: s.domain,
         url: s.url,
         title: s.title
       })),
       createdAt: new Date().toISOString(),
-      linkedTo: linkedCharacters.map(charId => ({
+      linkedTo: allLinkedChars.map(charId => ({
         type: "character" as const,
         id: charId
-      }))
+      })),
+      summary: sessionSummary || undefined,
+      tags: tags.length > 0 ? tags : undefined
     };
 
     onSave(newNote);
   };
 
-  const toggleCharacterLink = (characterId: string) => {
-    setLinkedCharacters(prev => 
-      prev.includes(characterId) 
-        ? prev.filter(id => id !== characterId)
-        : [...prev, characterId]
-    );
+  const removeNote = (index: number) => {
+    setAgreedNotes(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateNoteCharacters = (index: number, characterIds: string[]) => {
+    setAgreedNotes(prev => prev.map((note, i) => 
+      i === index ? { ...note, linkedCharacters: characterIds } : note
+    ));
+  };
+
+  const addTag = () => {
+    if (newTag.trim() && !tags.includes(newTag.trim())) {
+      setTags(prev => [...prev, newTag.trim()]);
+      setNewTag("");
+    }
+  };
+
+  const removeTag = (tag: string) => {
+    setTags(prev => prev.filter(t => t !== tag));
+  };
+
+  const generateSummary = async () => {
+    if (messages.length <= 1) {
+      alert("Have a conversation first before generating a summary.");
+      return;
+    }
+
+    setIsGeneratingSummary(true);
+    try {
+      const response = await fetch("/api/research-assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [
+            ...messages,
+            {
+              role: "user",
+              content: "Please provide a comprehensive but easy-to-read summary of everything we discussed in this research session. Include: 1) Main topics investigated, 2) Key findings and insights, 3) Important facts discovered, 4) Any recommendations for further research. Make it clear and concise."
+            }
+          ],
+          researchContext: {
+            agreedNotes: agreedNotes.map(n => n.content),
+            sources: allSources
+          },
+          storyContext: {
+            title: storyContext.title,
+            premise: storyContext.premise,
+            genre: storyContext.genre,
+            themes: storyContext.themes
+          }
+        })
+      });
+
+      if (!response.ok) throw new Error("Failed to generate summary");
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let summary = "";
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split("\n");
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6);
+              if (data === "[DONE]") break;
+
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.text) {
+                  summary += parsed.text;
+                  setSessionSummary(summary);
+                }
+              } catch (e) {
+                // Skip invalid JSON
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Summary generation error:", error);
+      alert("Failed to generate summary. Please try again.");
+    } finally {
+      setIsGeneratingSummary(false);
+    }
   };
 
   return (
@@ -432,68 +664,59 @@ function ResearchChatModal({
       <div className="bg-zinc-900 rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col border border-zinc-800">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-zinc-800">
-          <div>
+          <div className="flex-1">
             <h2 className="text-2xl font-bold text-white">Research Session</h2>
             <div className="flex items-center gap-3 mt-1">
               <p className="text-sm text-zinc-400">
-                {agreedNotes.length} notes • {sources.length} sources
+                {agreedNotes.length} notes agreed • {allSources.length} sources
               </p>
-              {linkedCharacters.length > 0 && (
-                <>
-                  <span className="text-zinc-600">•</span>
-                  <p className="text-sm text-emerald-400">
-                    Linked to {linkedCharacters.length} character{linkedCharacters.length !== 1 ? 's' : ''}
-                  </p>
-                </>
-              )}
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <div className="relative">
-              <button
-                onClick={() => setShowLinkMenu(!showLinkMenu)}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
-              >
-                🔗 Link to Characters
-                {linkedCharacters.length > 0 && (
-                  <span className="px-2 py-0.5 bg-emerald-600 rounded-full text-xs">
-                    {linkedCharacters.length}
-                  </span>
-                )}
-              </button>
-              
-              {showLinkMenu && (
-                <div className="absolute right-0 mt-2 w-64 bg-zinc-800 rounded-xl shadow-2xl border border-zinc-700 z-10 max-h-80 overflow-y-auto">
-                  <div className="p-3 border-b border-zinc-700">
-                    <p className="text-xs text-zinc-400">Select characters to link this research to:</p>
-                  </div>
-                  {storyContext.characters.length === 0 ? (
-                    <div className="p-4 text-center text-sm text-zinc-500">
-                      No characters yet
-                    </div>
-                  ) : (
-                    <div className="p-2">
-                      {storyContext.characters.map((char: any) => (
-                        <button
-                          key={char.id}
-                          onClick={() => toggleCharacterLink(char.id)}
-                          className={`w-full px-3 py-2 text-left rounded-lg text-sm transition-all flex items-center gap-2 ${
-                            linkedCharacters.includes(char.id)
-                              ? "bg-emerald-600 text-white"
-                              : "hover:bg-zinc-700 text-zinc-300"
-                          }`}
-                        >
-                          <span>{linkedCharacters.includes(char.id) ? "✓" : "○"}</span>
-                          <span className="flex-1">{char.name || "Unnamed"}</span>
-                          <span className="text-xs opacity-70">{char.id}</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
             
+            {/* Tags Input */}
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                type="text"
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addTag()}
+                placeholder="Add tag (e.g., 'Medieval Warfare', 'Psychology')"
+                className="px-3 py-1 bg-zinc-800 border border-zinc-700 rounded text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              />
+              <button
+                onClick={addTag}
+                className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-xs font-medium transition-all"
+              >
+                + Tag
+              </button>
+            </div>
+            
+            {tags.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {tags.map(tag => (
+                  <span
+                    key={tag}
+                    className="px-2 py-1 bg-blue-600/20 border border-blue-600/50 rounded text-xs text-blue-400 flex items-center gap-1"
+                  >
+                    🏷️ {tag}
+                    <button
+                      onClick={() => removeTag(tag)}
+                      className="hover:text-blue-300"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={generateSummary}
+              disabled={isGeneratingSummary || messages.length <= 1}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-sm font-medium transition-all"
+            >
+              {isGeneratingSummary ? "Generating..." : "📝 Generate Summary"}
+            </button>
             <button
               onClick={handleSaveResearch}
               disabled={agreedNotes.length === 0}
@@ -518,7 +741,55 @@ function ResearchChatModal({
               {messages.map((msg, idx) => (
                 <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div className={`max-w-[80%] ${msg.role === "user" ? "bg-emerald-600" : "bg-zinc-800"} rounded-2xl p-4`}>
-                    <p className="text-white whitespace-pre-wrap">{msg.content}</p>
+                    {/* Render content with inline checkboxes for parsed points */}
+                    {msg.role === "assistant" && msg.parsedPoints && msg.parsedPoints.length > 0 ? (
+                      <div className="space-y-2">
+                        {msg.parsedPoints.map((point) => (
+                          <div key={point.id} className="flex items-start gap-2 group">
+                            <button
+                              onClick={() => {
+                                const isChecked = !point.isSelected;
+                                setMessages(prev => {
+                                  const updated = [...prev];
+                                  const message = updated[idx];
+                                  if (message.parsedPoints) {
+                                    message.parsedPoints = message.parsedPoints.map(p =>
+                                      p.id === point.id ? { ...p, isSelected: isChecked } : p
+                                    );
+                                  }
+                                  return updated;
+                                });
+                                
+                                // Add/remove from agreed notes
+                                if (isChecked) {
+                                  handleAgreeToNote({
+                                    role: "assistant",
+                                    content: point.content,
+                                    sources: msg.sources
+                                  });
+                                } else {
+                                  setAgreedNotes(prev => prev.filter(n => n.content !== point.content));
+                                }
+                              }}
+                              className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-all mt-0.5 ${
+                                point.isSelected 
+                                  ? "bg-emerald-600 border-emerald-600" 
+                                  : "border-zinc-600 hover:border-emerald-500 opacity-50 group-hover:opacity-100"
+                              }`}
+                            >
+                              {point.isSelected && (
+                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </button>
+                            <p className="text-white text-sm leading-relaxed flex-1">{point.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-white whitespace-pre-wrap">{msg.content}</p>
+                    )}
                     
                     {msg.role === "assistant" && msg.sources && msg.sources.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-zinc-700">
@@ -537,16 +808,6 @@ function ResearchChatModal({
                           ))}
                         </div>
                       </div>
-                    )}
-                    
-                    {msg.role === "assistant" && (
-                      <button
-                        onClick={() => handleAgreeToNote(msg.content)}
-                        disabled={agreedNotes.includes(msg.content)}
-                        className="mt-3 px-3 py-1 bg-emerald-700 hover:bg-emerald-600 disabled:bg-zinc-700 disabled:cursor-not-allowed rounded text-xs font-medium transition-all"
-                      >
-                        {agreedNotes.includes(msg.content) ? "✓ Agreed" : "Agree & Save Note"}
-                      </button>
                     )}
                   </div>
                 </div>
@@ -590,33 +851,74 @@ function ResearchChatModal({
 
           {/* Agreed Notes Panel */}
           <div className="w-80 border-l border-zinc-800 p-6 overflow-y-auto custom-scrollbar bg-zinc-950/50">
+            {/* Session Summary */}
+            {sessionSummary && (
+              <div className="mb-6 p-4 bg-blue-900/20 rounded-lg border border-blue-700/30">
+                <h3 className="text-sm font-semibold text-blue-400 mb-2 flex items-center gap-2">
+                  <span>📝</span>
+                  <span>Session Summary</span>
+                </h3>
+                <div className="text-xs text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                  {sessionSummary}
+                </div>
+              </div>
+            )}
+            
             <h3 className="text-lg font-semibold text-white mb-4">Agreed Notes ({agreedNotes.length})</h3>
             {agreedNotes.length === 0 ? (
-              <p className="text-sm text-zinc-500">Click "Agree & Save Note" on AI responses to add them here</p>
+              <p className="text-sm text-zinc-500">Click "Agree & Save" on AI responses to add them here</p>
             ) : (
               <div className="space-y-3">
                 {agreedNotes.map((note, idx) => (
                   <div key={idx} className="p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
-                    <div className="flex items-start gap-2">
+                    <div className="flex items-start gap-2 mb-2">
                       <span className="text-emerald-500 mt-1">✓</span>
-                      <p className="text-sm text-zinc-300 flex-1">{note}</p>
+                      <p className="text-sm text-zinc-300 flex-1">{note.content}</p>
                       <button
-                        onClick={() => setAgreedNotes(prev => prev.filter((_, i) => i !== idx))}
+                        onClick={() => removeNote(idx)}
                         className="text-red-400 hover:text-red-300 text-xs"
                       >
                         ✕
                       </button>
                     </div>
+                    
+                    {/* Character linking for this note */}
+                    {storyContext.characters.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-zinc-700/50">
+                        <p className="text-xs text-zinc-500 mb-1">Link to characters:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {storyContext.characters.map((char: any) => (
+                            <button
+                              key={char.id}
+                              onClick={() => {
+                                const isLinked = note.linkedCharacters.includes(char.id);
+                                const newLinked = isLinked 
+                                  ? note.linkedCharacters.filter(id => id !== char.id)
+                                  : [...note.linkedCharacters, char.id];
+                                updateNoteCharacters(idx, newLinked);
+                              }}
+                              className={`px-2 py-0.5 rounded text-xs transition-all ${
+                                note.linkedCharacters.includes(char.id)
+                                  ? "bg-emerald-600 text-white"
+                                  : "bg-zinc-700 text-zinc-400 hover:bg-zinc-600"
+                              }`}
+                            >
+                              {char.name || char.id}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             )}
             
-            {sources.length > 0 && (
+            {allSources.length > 0 && (
               <div className="mt-6">
-                <h3 className="text-lg font-semibold text-white mb-4">Sources ({sources.length})</h3>
+                <h3 className="text-lg font-semibold text-white mb-4">Sources ({allSources.length})</h3>
                 <div className="space-y-2">
-                  {sources.map((source, idx) => (
+                  {allSources.map((source, idx) => (
                     <div key={idx} className="p-2 bg-zinc-800/50 rounded border border-zinc-700/50">
                       <a
                         href={source.url}
@@ -785,6 +1087,35 @@ function ResearchNoteDetail({
             </div>
           )}
         </div>
+
+        {/* Tags */}
+        {editedNote.tags && editedNote.tags.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-2">Tags</label>
+            <div className="flex flex-wrap gap-2">
+              {editedNote.tags.map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="px-3 py-1 bg-blue-600/20 border border-blue-600/50 rounded text-sm text-blue-400"
+                >
+                  🏷️ {tag}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Session Summary */}
+        {editedNote.summary && (
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-2">Session Summary</label>
+            <div className="p-4 bg-blue-900/20 rounded-lg border border-blue-700/30">
+              <p className="text-sm text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                {editedNote.summary}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
