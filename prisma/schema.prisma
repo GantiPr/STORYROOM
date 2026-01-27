@@ -22,8 +22,24 @@ model StorySession {
   characters Character[]
   plotBeats  PlotBeat[]
   research   ResearchNote[]
+  builderSessions BuilderSession[]
   
   @@map("story_sessions")
+}
+
+model BuilderSession {
+  id        String @id
+  title     String
+  messages  String // JSON array as string
+  summary   String?
+  linkedTo  String? // JSON array as string
+  createdAt String
+  updatedAt String
+  
+  sessionId String
+  session   StorySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@map("builder_sessions")
 }
 
 model Character {

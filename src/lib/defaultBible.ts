@@ -8,4 +8,5 @@ export const defaultBible: StoryBible = {
   characters: [],
   plot: [],
   research: [],
+  builderSessions: [],
 };

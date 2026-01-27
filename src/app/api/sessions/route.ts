@@ -16,6 +16,7 @@ export async function GET(request: Request) {
           characters: true,
           plotBeats: true,
           research: true,
+          builderSessions: true,
         },
       });
 
@@ -56,6 +57,15 @@ export async function GET(request: Request) {
           sources: JSON.parse(r.sources),
           createdAt: r.createdAt,
         })),
+        builderSessions: session.builderSessions?.map(b => ({
+          id: b.id,
+          title: b.title,
+          messages: JSON.parse(b.messages),
+          summary: b.summary || undefined,
+          linkedTo: b.linkedTo ? JSON.parse(b.linkedTo) : undefined,
+          createdAt: b.createdAt,
+          updatedAt: b.updatedAt,
+        })) || [],
       };
 
       return NextResponse.json({ session: bible, sessionId: session.id });
@@ -106,6 +116,7 @@ export async function POST(request: Request) {
       await prisma.character.deleteMany({ where: { sessionId } });
       await prisma.plotBeat.deleteMany({ where: { sessionId } });
       await prisma.researchNote.deleteMany({ where: { sessionId } });
+      await prisma.builderSession.deleteMany({ where: { sessionId } });
     } else {
       // Create new session
       session = await prisma.storySession.create({
@@ -156,6 +167,22 @@ export async function POST(request: Request) {
           bullets: JSON.stringify(r.bullets),
           sources: JSON.stringify(r.sources),
           createdAt: r.createdAt,
+          sessionId: session.id,
+        })),
+      });
+    }
+
+    // Create builder sessions
+    if (bible.builderSessions && bible.builderSessions.length > 0) {
+      await prisma.builderSession.createMany({
+        data: bible.builderSessions.map(b => ({
+          id: b.id,
+          title: b.title,
+          messages: JSON.stringify(b.messages),
+          summary: b.summary || null,
+          linkedTo: b.linkedTo ? JSON.stringify(b.linkedTo) : null,
+          createdAt: b.createdAt,
+          updatedAt: b.updatedAt,
           sessionId: session.id,
         })),
       });

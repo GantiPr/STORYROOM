@@ -17,6 +17,40 @@ export default function CharactersPage() {
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const createMenuRef = useRef<HTMLDivElement>(null);
 
+  // Ensure builderSessions exists
+  const builderSessions = bible.builderSessions || [];
+
+  // Debug logging
+  useEffect(() => {
+    if (!isLoaded) return;
+    
+    console.log('=== CharactersPage State Update ===');
+    console.log('Bible loaded:', isLoaded);
+    console.log('Total characters:', bible.characters.length);
+    console.log('Total research notes:', bible.research.length);
+    console.log('All research notes:', bible.research.map(r => ({ 
+      id: r.id, 
+      question: r.question, 
+      linkedTo: r.linkedTo 
+    })));
+    console.log('All characters:', bible.characters.map(c => ({
+      id: c.id,
+      name: c.name,
+      researchNotes: c.researchNotes
+    })));
+    console.log('Characters with research:', bible.characters.filter(c => c.researchNotes && c.researchNotes.length > 0).map(c => ({
+      id: c.id,
+      name: c.name,
+      researchNotes: c.researchNotes
+    })));
+    
+    if (selectedCharacter) {
+      const currentChar = bible.characters.find(c => c.id === selectedCharacter.id);
+      console.log('Selected character:', currentChar?.name);
+      console.log('Selected character research notes:', currentChar?.researchNotes);
+    }
+  }, [bible, isLoaded, selectedCharacter]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -211,10 +245,31 @@ export default function CharactersPage() {
               </div>
               
               <Link
-                href="/"
+                href="/builder"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-all hover:scale-105"
+              >
+                🎭 Builder
+              </Link>
+              
+              <Link
+                href="/research"
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-sm font-medium transition-all hover:scale-105"
+              >
+                📚 Research
+              </Link>
+              
+              <Link
+                href="/critique"
+                className="px-4 py-2 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 rounded-lg text-sm font-medium transition-all hover:scale-105"
+              >
+                🔍 Critique
+              </Link>
+              
+              <Link
+                href="/projects"
                 className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-medium transition-all hover:scale-105 border border-zinc-700"
               >
-                ← Back to Story
+                ← Projects
               </Link>
             </div>
           </div>
@@ -363,6 +418,7 @@ export default function CharactersPage() {
                   onDelete={() => handleDeleteCharacter(selectedCharacter.id)}
                   allCharacters={bible.characters}
                   researchNotes={bible.research}
+                  builderSessions={builderSessions}
                 />
               </div>
             ) : (
@@ -467,7 +523,8 @@ function CharacterDetailPanel({
   onCancel,
   onDelete,
   allCharacters,
-  researchNotes
+  researchNotes,
+  builderSessions
 }: {
   character: Character;
   isEditing: boolean;
@@ -478,10 +535,13 @@ function CharacterDetailPanel({
   onDelete: () => void;
   allCharacters: Character[];
   researchNotes: any[];
+  builderSessions: any[];
 }) {
   const [editedCharacter, setEditedCharacter] = useState<Character>(character);
   // Store raw strings for comma-separated fields
   const [tellsString, setTellsString] = useState<string>('');
+  
+  // Character linking removed for simplicity - research can be viewed from Research Library
   const [tabooWordsString, setTabooWordsString] = useState<string>('');
   
   // Refs for uncontrolled inputs as backup
@@ -865,87 +925,71 @@ function CharacterDetailPanel({
           </div>
         )}
 
-        {/* Linked Research Notes */}
-        <div className="p-6 rounded-xl bg-gradient-to-br from-emerald-900/20 to-emerald-800/20 border border-emerald-700/30">
+        {/* Related Content */}
+        <div className="p-6 rounded-xl bg-gradient-to-br from-zinc-800/40 to-zinc-900/40 border border-zinc-700/50">
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <span>📚</span>
-            <span>Research Insights</span>
-            {character.researchNotes && character.researchNotes.length > 0 && (
-              <span className="text-sm text-emerald-400">({character.researchNotes.length})</span>
-            )}
+            <span>🔗</span>
+            <span>Related Content</span>
           </h3>
           
-          {!character.researchNotes || character.researchNotes.length === 0 ? (
-            <div className="text-center py-6">
-              <p className="text-sm text-zinc-400 mb-2">No research linked to this character yet</p>
-              <p className="text-xs text-zinc-500">
-                Link research from the Research Library to see insights here
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {character.researchNotes.map((noteId) => {
-                const note = researchNotes.find(n => n.id === noteId);
-                if (!note) {
-                  console.log('Research note not found:', noteId, 'Available:', researchNotes.map(n => n.id));
-                  return null;
-                }
-                
-                return (
-                  <div key={noteId} className="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <h4 className="text-sm font-semibold text-emerald-400">{note.question}</h4>
-                        {note.tags && note.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {note.tags.map((tag: string, idx: number) => (
-                              <span key={idx} className="text-xs px-2 py-0.5 bg-blue-600/20 border border-blue-600/50 rounded text-blue-400">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <a
+          <div className="space-y-4">
+            {/* Related Research */}
+            {researchNotes.filter(r => r.linkedTo?.some((l: any) => l.type === "character" && l.id === character.id)).length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold text-emerald-400 mb-2">📚 Research</h4>
+                <div className="space-y-2">
+                  {researchNotes
+                    .filter(r => r.linkedTo?.some((l: any) => l.type === "character" && l.id === character.id))
+                    .map((note: any) => (
+                      <Link
+                        key={note.id}
                         href="/research"
-                        className="text-xs text-emerald-400 hover:text-emerald-300 whitespace-nowrap ml-2"
+                        className="block p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/50 hover:border-emerald-600/50 transition-all"
                       >
-                        View Full →
-                      </a>
-                    </div>
-                    
-                    {/* Show summary if available, otherwise show first 2 bullets */}
-                    {note.summary ? (
-                      <p className="text-sm text-zinc-300 leading-relaxed mt-2 line-clamp-3">
-                        {note.summary}
-                      </p>
-                    ) : (
-                      <div className="mt-2 space-y-1">
-                        {note.bullets.slice(0, 2).map((bullet: string, idx: number) => (
-                          <p key={idx} className="text-sm text-zinc-300 line-clamp-2">
-                            • {bullet}
-                          </p>
-                        ))}
-                        {note.bullets.length > 2 && (
-                          <p className="text-xs text-zinc-500 italic">
-                            +{note.bullets.length - 2} more insights
-                          </p>
+                        <p className="text-sm text-zinc-200 font-medium">{note.question}</p>
+                        {note.summary && (
+                          <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{note.summary}</p>
                         )}
-                      </div>
-                    )}
-                    
-                    {note.sources && note.sources.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-zinc-700/50">
-                        <p className="text-xs text-zinc-500">
-                          {note.sources.length} source{note.sources.length !== 1 ? 's' : ''} cited
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                      </Link>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Related Builder Sessions */}
+            {builderSessions.filter(s => 
+              s.linkedTo?.some((l: any) => l.type === "character" && l.id === character.id)
+            ).length > 0 && (
+              <div>
+                <h4 className="text-sm font-semibold text-blue-400 mb-2">🎭 Builder Sessions</h4>
+                <div className="space-y-2">
+                  {builderSessions
+                    .filter(s => 
+                      s.linkedTo?.some((l: any) => l.type === "character" && l.id === character.id)
+                    )
+                    .map((session: any) => (
+                      <Link
+                        key={session.id}
+                        href="/builder"
+                        className="block p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/50 hover:border-blue-600/50 transition-all"
+                      >
+                        <p className="text-sm text-zinc-200 font-medium">{session.title}</p>
+                        {session.summary && (
+                          <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{session.summary}</p>
+                        )}
+                      </Link>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {researchNotes.filter(r => r.linkedTo?.some((l: any) => l.type === "character" && l.id === character.id)).length === 0 &&
+             builderSessions.filter(s => s.linkedTo?.some((l: any) => l.type === "character" && l.id === character.id)).length === 0 && (
+              <div className="text-center py-6">
+                <p className="text-sm text-zinc-500">No related research or builder sessions yet</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

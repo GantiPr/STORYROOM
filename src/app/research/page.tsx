@@ -14,7 +14,6 @@ type ParsedPoint = {
 type AgreedNote = {
   content: string;
   sources: Array<{ id: string; domain: string; url: string; title: string }>;
-  linkedCharacters: string[];
 };
 
 type ChatMessage = {
@@ -53,37 +52,13 @@ export default function ResearchPage() {
     console.log('=== handleSaveNoteFromChat called ===');
     console.log('Note to save:', note);
     console.log('Current research count:', bible.research.length);
+    console.log('Note linkedTo:', note.linkedTo);
     
-    // Save the research note AND update linked characters in a single state update
-    setBible(prev => {
-      const updatedResearch = [...prev.research, note];
-      
-      // Update linked characters with this research note ID
-      const updatedCharacters = note.linkedTo && note.linkedTo.length > 0
-        ? prev.characters.map(char => {
-            const isLinked = note.linkedTo?.some(link => link.type === "character" && link.id === char.id);
-            if (isLinked) {
-              console.log(`Linking note ${note.id} to character ${char.id}`);
-              return {
-                ...char,
-                researchNotes: [...(char.researchNotes || []), note.id]
-              };
-            }
-            return char;
-          })
-        : prev.characters;
-      
-      const updated = {
-        ...prev,
-        research: updatedResearch,
-        characters: updatedCharacters
-      };
-      
-      console.log('Updated bible - research count:', updated.research.length);
-      console.log('Updated bible - characters with research:', updated.characters.filter(c => c.researchNotes && c.researchNotes.length > 0).length);
-      
-      return updated;
-    });
+    // Simply add the research note - characters will find it via linkedTo
+    setBible(prev => ({
+      ...prev,
+      research: [...prev.research, note]
+    }));
 
     console.log('Closing chat and setting selected note');
     setShowResearchChat(false);
@@ -91,18 +66,28 @@ export default function ResearchPage() {
   };
 
   const handleSaveNote = (note: ResearchNote) => {
-    if (isCreating) {
-      setBible(prev => ({
+    console.log('=== handleSaveNote called ===');
+    console.log('Note ID:', note.id);
+    console.log('Note question:', note.question);
+    console.log('Note linkedTo:', note.linkedTo);
+    console.log('Is creating:', isCreating);
+    
+    setBible(prev => {
+      // Update or add the research note
+      const updatedResearch = isCreating
+        ? [...prev.research, note]
+        : prev.research.map(n => n.id === note.id ? note : n);
+      
+      console.log('Updated research count:', updatedResearch.length);
+      console.log('Research note saved with linkedTo:', note.linkedTo);
+      
+      return {
         ...prev,
-        research: [...prev.research, note]
-      }));
-      setIsCreating(false);
-    } else {
-      setBible(prev => ({
-        ...prev,
-        research: prev.research.map(n => n.id === note.id ? note : n)
-      }));
-    }
+        research: updatedResearch
+      };
+    });
+    
+    setIsCreating(false);
     setSelectedNote(note);
   };
 
@@ -112,6 +97,7 @@ export default function ResearchPage() {
         ...prev,
         research: prev.research.filter(n => n.id !== noteId)
       }));
+      
       if (selectedNote?.id === noteId) {
         setSelectedNote(null);
       }
@@ -147,10 +133,31 @@ export default function ResearchPage() {
               </div>
               
               <Link
-                href="/"
+                href="/builder"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-all hover:scale-105"
+              >
+                🎭 Builder
+              </Link>
+              
+              <Link
+                href="/characters"
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition-all hover:scale-105"
+              >
+                👥 Characters
+              </Link>
+              
+              <Link
+                href="/critique"
+                className="px-4 py-2 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 rounded-lg text-sm font-medium transition-all hover:scale-105"
+              >
+                🔍 Critique
+              </Link>
+              
+              <Link
+                href="/projects"
                 className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-medium transition-all hover:scale-105 border border-zinc-700"
               >
-                ← Back to Story
+                ← Projects
               </Link>
             </div>
           </div>
@@ -342,8 +349,7 @@ function ResearchChatModal({
       // Pre-populate with existing notes
       return existingNote.bullets.map(bullet => ({
         content: bullet,
-        sources: existingNote.sources,
-        linkedCharacters: existingNote.linkedTo?.filter(l => l.type === "character").map(l => l.id) || []
+        sources: existingNote.sources
       }));
     }
     return [];
@@ -527,18 +533,17 @@ function ResearchChatModal({
     }
   };
 
-  const handleAgreeToNote = (message: ChatMessage, linkedChars: string[] = []) => {
+  const handleAgreeToNote = (message: ChatMessage) => {
     const noteExists = agreedNotes.some(n => n.content === message.content);
     if (!noteExists) {
       setAgreedNotes(prev => [...prev, {
         content: message.content,
-        sources: message.sources || [],
-        linkedCharacters: linkedChars
+        sources: message.sources || []
       }]);
     }
   };
 
-  const handleSaveResearch = () => {
+  const handleSaveResearch = async () => {
     if (agreedNotes.length === 0) {
       alert("Please agree to at least one research note before saving.");
       return;
@@ -556,11 +561,6 @@ function ResearchChatModal({
       arr.findIndex(x => x.url === s.url) === idx
     );
 
-    // Collect all unique linked characters
-    const allLinkedChars = [...new Set(agreedNotes.flatMap(n => n.linkedCharacters))];
-
-    console.log('Linked characters:', allLinkedChars);
-
     const newNote: ResearchNote = {
       id: nextNoteId,
       question,
@@ -572,10 +572,6 @@ function ResearchChatModal({
         title: s.title
       })),
       createdAt: new Date().toISOString(),
-      linkedTo: allLinkedChars.map(charId => ({
-        type: "character" as const,
-        id: charId
-      })),
       summary: sessionSummary || undefined,
       tags: tags.length > 0 ? tags : undefined
     };
@@ -584,18 +580,16 @@ function ResearchChatModal({
     console.log('Research note:', newNote);
     console.log('Note ID:', newNote.id);
     console.log('Bullets count:', newNote.bullets.length);
-    console.log('Linked characters:', newNote.linkedTo);
+    
+    // Call onSave and wait a moment for state to update
     onSave(newNote);
+    
+    // Give it a moment to save to localStorage/database
+    await new Promise(resolve => setTimeout(resolve, 500));
   };
 
   const removeNote = (index: number) => {
     setAgreedNotes(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const updateNoteCharacters = (index: number, characterIds: string[]) => {
-    setAgreedNotes(prev => prev.map((note, i) => 
-      i === index ? { ...note, linkedCharacters: characterIds } : note
-    ));
   };
 
   const addTag = () => {
@@ -903,34 +897,6 @@ function ResearchChatModal({
                         ✕
                       </button>
                     </div>
-                    
-                    {/* Character linking for this note */}
-                    {storyContext.characters.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-zinc-700/50">
-                        <p className="text-xs text-zinc-500 mb-1">Link to characters:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {storyContext.characters.map((char: any) => (
-                            <button
-                              key={char.id}
-                              onClick={() => {
-                                const isLinked = note.linkedCharacters.includes(char.id);
-                                const newLinked = isLinked 
-                                  ? note.linkedCharacters.filter(id => id !== char.id)
-                                  : [...note.linkedCharacters, char.id];
-                                updateNoteCharacters(idx, newLinked);
-                              }}
-                              className={`px-2 py-0.5 rounded text-xs transition-all ${
-                                note.linkedCharacters.includes(char.id)
-                                  ? "bg-emerald-600 text-white"
-                                  : "bg-zinc-700 text-zinc-400 hover:bg-zinc-600"
-                              }`}
-                            >
-                              {char.name || char.id}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
@@ -976,12 +942,21 @@ function ResearchNoteDetail({
   onDelete: () => void;
   onCancel: () => void;
 }) {
+  const { bible } = useBible();
   const [editedNote, setEditedNote] = useState<ResearchNote>(note);
   const [newBullet, setNewBullet] = useState("");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
     setEditedNote(note);
+    setHasUnsavedChanges(false);
   }, [note]);
+
+  // Track changes
+  useEffect(() => {
+    const hasChanges = JSON.stringify(editedNote) !== JSON.stringify(note);
+    setHasUnsavedChanges(hasChanges);
+  }, [editedNote, note]);
 
   const handleAddBullet = () => {
     if (newBullet.trim()) {
@@ -1000,18 +975,53 @@ function ResearchNoteDetail({
     }));
   };
 
+  const handleToggleCharacterLink = (characterId: string) => {
+    setEditedNote(prev => {
+      const currentLinks = prev.linkedTo || [];
+      const isLinked = currentLinks.some(link => link.type === "character" && link.id === characterId);
+      
+      const newLinks = isLinked
+        ? currentLinks.filter(link => !(link.type === "character" && link.id === characterId))
+        : [...currentLinks, { type: "character" as const, id: characterId }];
+      
+      return {
+        ...prev,
+        linkedTo: newLinks
+      };
+    });
+  };
+
+  const linkedCharacterIds = (editedNote.linkedTo || [])
+    .filter(link => link.type === "character")
+    .map(link => link.id);
+
   return (
     <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 shadow-xl p-8">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-white">
-          {isCreating ? "New Research Note" : "Research Note"}
-        </h2>
+        <div>
+          <h2 className="text-2xl font-semibold text-white">
+            {isCreating ? "New Research Note" : "Research Note"}
+          </h2>
+          {hasUnsavedChanges && (
+            <p className="text-sm text-yellow-500 mt-1 flex items-center gap-2">
+              <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span>
+              Unsaved changes - Click Save to keep your changes
+            </p>
+          )}
+        </div>
         <div className="flex gap-2">
           <button
-            onClick={() => onSave(editedNote)}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-sm font-medium transition-all"
+            onClick={() => {
+              onSave(editedNote);
+              setHasUnsavedChanges(false);
+            }}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              hasUnsavedChanges
+                ? "bg-emerald-600 hover:bg-emerald-700 animate-pulse"
+                : "bg-emerald-600 hover:bg-emerald-700"
+            }`}
           >
-            Save
+            {hasUnsavedChanges ? "💾 Save Changes" : "Save"}
           </button>
           {!isCreating && (
             <button
@@ -1022,7 +1032,12 @@ function ResearchNoteDetail({
             </button>
           )}
           <button
-            onClick={onCancel}
+            onClick={() => {
+              if (hasUnsavedChanges && !confirm("You have unsaved changes. Are you sure you want to cancel?")) {
+                return;
+              }
+              onCancel();
+            }}
             className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-lg text-sm font-medium transition-all"
           >
             Cancel
@@ -1107,6 +1122,47 @@ function ResearchNoteDetail({
                 </div>
               ))}
             </div>
+          )}
+        </div>
+
+        {/* Linked Characters */}
+        <div className="p-4 bg-purple-900/20 rounded-lg border border-purple-700/30">
+          <label className="block text-sm font-medium text-purple-300 mb-2">
+            🔗 Linked Characters
+            {linkedCharacterIds.length > 0 && (
+              <span className="ml-2 text-emerald-400 text-xs">({linkedCharacterIds.length} linked)</span>
+            )}
+          </label>
+          {bible.characters.length === 0 ? (
+            <p className="text-sm text-zinc-500">No characters created yet</p>
+          ) : (
+            <>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {bible.characters.map((char) => {
+                  const isLinked = linkedCharacterIds.includes(char.id);
+                  return (
+                    <button
+                      key={char.id}
+                      onClick={() => handleToggleCharacterLink(char.id)}
+                      className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+                        isLinked
+                          ? "bg-purple-600 hover:bg-purple-700 text-white"
+                          : "bg-zinc-800 hover:bg-zinc-700 text-zinc-400 border border-zinc-700"
+                      }`}
+                    >
+                      {isLinked && '✓ '}{char.name || char.id}
+                    </button>
+                  );
+                })}
+              </div>
+              {linkedCharacterIds.length > 0 && (
+                <div className="p-2 bg-emerald-900/20 rounded border border-emerald-700/30">
+                  <p className="text-xs text-emerald-300">
+                    💡 This research will appear in the linked characters' profiles after you click Save
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
 

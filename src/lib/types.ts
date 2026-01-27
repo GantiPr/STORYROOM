@@ -1,4 +1,20 @@
-export type Mode = "brainstorm" | "develop" | "research" | "critique";
+export type Mode = "builder" | "develop" | "research" | "critique";
+
+export type BuilderSession = {
+  id: string; // e.g. "BS1"
+  title: string;
+  messages: Array<{
+    role: "user" | "assistant";
+    content: string;
+  }>;
+  summary?: string; // AI-generated summary of key learnings
+  linkedTo?: Array<{
+    type: "character";
+    id: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export type ResearchSource = {
   id: string; // e.g. "S1"
@@ -56,6 +72,16 @@ export type StoryBible = {
   characters: Character[];
   plot: PlotBeat[];
   research: ResearchNote[];
+  builderSessions?: BuilderSession[];
+};
+
+export type Project = {
+  id: string;
+  name: string;
+  description: string;
+  bible: StoryBible;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type ChatMessage = {

@@ -6,70 +6,100 @@ import { defaultBible } from "@/lib/defaultBible";
 
 const STORAGE_KEY = "storyroom-bible";
 const SESSION_ID_KEY = "storyroom-session-id";
+const ACTIVE_PROJECT_KEY = "storyroom-active-project";
 
 export function useBible() {
-  const [bible, setBible] = useState<StoryBible>(defaultBible);
+  const [bible, setBibleState] = useState<StoryBible>(defaultBible);
   const [isLoaded, setIsLoaded] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Load bible from database on mount
+  // Load bible from localStorage (project-specific)
   useEffect(() => {
-    loadLatestSession();
+    loadBibleFromStorage();
   }, []);
 
-  const loadLatestSession = async () => {
+  const loadBibleFromStorage = () => {
     try {
-      const response = await fetch('/api/sessions?action=latest');
-      const data = await response.json();
-
-      if (data.session) {
-        setBible(data.session);
-        setSessionId(data.sessionId);
-        // Also save to localStorage as backup
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data.session));
-        localStorage.setItem(SESSION_ID_KEY, data.sessionId);
-      } else {
-        // No session in database, try localStorage
-        const saved = localStorage.getItem(STORAGE_KEY);
-        const savedSessionId = localStorage.getItem(SESSION_ID_KEY);
-        
-        if (saved) {
-          const parsedBible = JSON.parse(saved);
-          setBible(parsedBible);
-          setSessionId(savedSessionId);
+      const activeProjectId = localStorage.getItem(ACTIVE_PROJECT_KEY);
+      
+      if (activeProjectId) {
+        // Load from projects
+        const projectsData = localStorage.getItem("storyroom-projects");
+        if (projectsData) {
+          const projects = JSON.parse(projectsData);
+          const activeProject = projects.find((p: any) => p.id === activeProjectId);
+          
+          if (activeProject) {
+            const bibleWithDefaults = {
+              ...activeProject.bible,
+              builderSessions: activeProject.bible.builderSessions || []
+            };
+            setBibleState(bibleWithDefaults);
+            setIsLoaded(true);
+            return;
+          }
         }
+      }
+      
+      // Fallback to old storage method
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const savedSessionId = localStorage.getItem(SESSION_ID_KEY);
+      
+      if (saved) {
+        const parsedBible = JSON.parse(saved);
+        const bibleWithDefaults = {
+          ...parsedBible,
+          builderSessions: parsedBible.builderSessions || []
+        };
+        setBibleState(bibleWithDefaults);
+        setSessionId(savedSessionId);
       }
     } catch (error) {
-      console.warn("Failed to load session from database, using localStorage:", error);
-      
-      // Fallback to localStorage
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        const savedSessionId = localStorage.getItem(SESSION_ID_KEY);
-        
-        if (saved) {
-          const parsedBible = JSON.parse(saved);
-          setBible(parsedBible);
-          setSessionId(savedSessionId);
-        }
-      } catch (localError) {
-        console.warn("Failed to load from localStorage:", localError);
-      }
+      console.error("Failed to load bible:", error);
     } finally {
       setIsLoaded(true);
     }
   };
 
+  const setBible = useCallback((updater: StoryBible | ((prev: StoryBible) => StoryBible)) => {
+    setBibleState(prev => {
+      const newBible = typeof updater === 'function' ? updater(prev) : updater;
+      
+      // Save to project storage
+      try {
+        const activeProjectId = localStorage.getItem(ACTIVE_PROJECT_KEY);
+        
+        if (activeProjectId) {
+          const projectsData = localStorage.getItem("storyroom-projects");
+          if (projectsData) {
+            const projects = JSON.parse(projectsData);
+            const updatedProjects = projects.map((p: any) => 
+              p.id === activeProjectId 
+                ? { ...p, bible: newBible, updatedAt: new Date().toISOString() }
+                : p
+            );
+            localStorage.setItem("storyroom-projects", JSON.stringify(updatedProjects));
+          }
+        }
+        
+        // Also save to old storage for backward compatibility
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newBible));
+      } catch (error) {
+        console.error("Failed to save bible:", error);
+      }
+      
+      return newBible;
+    });
+  }, []);
+
   const saveSession = useCallback(async (bibleToSave: StoryBible) => {
-    if (!isLoaded) return; // Don't save during initial load
+    if (!isLoaded) return;
     
     setIsSaving(true);
     try {
-      // Save to localStorage immediately for responsiveness
       localStorage.setItem(STORAGE_KEY, JSON.stringify(bibleToSave));
       
-      // Save to database
       const response = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -81,8 +111,6 @@ export function useBible() {
       if (data.success) {
         setSessionId(data.sessionId);
         localStorage.setItem(SESSION_ID_KEY, data.sessionId);
-      } else {
-        console.warn("Failed to save to database:", data.error);
       }
     } catch (error) {
       console.warn("Failed to save session:", error);
@@ -90,17 +118,6 @@ export function useBible() {
       setIsSaving(false);
     }
   }, [sessionId, isLoaded]);
-
-  // Auto-save whenever bible changes (debounced)
-  useEffect(() => {
-    if (!isLoaded) return;
-    
-    const timeoutId = setTimeout(() => {
-      saveSession(bible);
-    }, 1000); // Save 1 second after last change
-
-    return () => clearTimeout(timeoutId);
-  }, [bible, saveSession, isLoaded]);
 
   const manualSave = useCallback(() => {
     saveSession(bible);
@@ -113,6 +130,6 @@ export function useBible() {
     isSaving,
     sessionId,
     manualSave,
-    loadLatestSession
+    loadBibleFromStorage
   };
 }
