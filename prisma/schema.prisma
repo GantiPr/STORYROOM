@@ -1,0 +1,72 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model StorySession {
+  id        String   @id @default(cuid())
+  title     String
+  premise   String
+  genre     String
+  themes    String   // JSON array as string
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  characters Character[]
+  plotBeats  PlotBeat[]
+  research   ResearchNote[]
+  
+  @@map("story_sessions")
+}
+
+model Character {
+  id           String @id
+  name         String
+  role         String
+  logline      String
+  desire       String
+  fear         String
+  wound        String
+  contradiction String
+  voice        String // JSON object as string
+  relationships String // JSON array as string
+  arc          String // JSON object as string
+  
+  sessionId    String
+  session      StorySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@map("characters")
+}
+
+model PlotBeat {
+  id      String @id
+  label   String
+  summary String
+  stakes  String
+  turn    String
+  
+  sessionId String
+  session   StorySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@map("plot_beats")
+}
+
+model ResearchNote {
+  id        String @id
+  question  String
+  bullets   String // JSON array as string
+  sources   String // JSON array as string
+  createdAt String
+  
+  sessionId String
+  session   StorySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  @@map("research_notes")
+}
