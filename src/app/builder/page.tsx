@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useBible } from "@/hooks/useBible";
-import type { BuilderSession, StoryPhase } from "@/lib/types";
+import type { BuilderSession, StoryPhase, Artifact } from "@/lib/types";
+import { SaveArtifactModal } from "@/components/SaveArtifactModal";
 import Link from "next/link";
 import { PhaseSelector } from "@/components/PhaseSelector";
 
@@ -333,6 +334,7 @@ function BuilderChatModal({
   nextSessionId: string;
   storyContext: any;
 }) {
+  const { setBible } = useBible();
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>(
     existingSession?.messages || []
   );
@@ -344,6 +346,9 @@ function BuilderChatModal({
   const [linkedCharacters, setLinkedCharacters] = useState<string[]>(
     existingSession?.linkedTo?.map(l => l.id) || []
   );
+  const [showSaveArtifact, setShowSaveArtifact] = useState(false);
+  const [selectedMessageContent, setSelectedMessageContent] = useState("");
+  const [selectedMessageIndex, setSelectedMessageIndex] = useState<number | undefined>();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -636,6 +641,18 @@ function BuilderChatModal({
             <div key={idx} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
               <div className={`max-w-[80%] ${msg.role === "user" ? "bg-blue-600" : "bg-zinc-800"} rounded-2xl p-4`}>
                 <p className="text-white whitespace-pre-wrap">{msg.content}</p>
+                {msg.role === "assistant" && msg.content.length > 100 && (
+                  <button
+                    onClick={() => {
+                      setSelectedMessageContent(msg.content);
+                      setSelectedMessageIndex(idx);
+                      setShowSaveArtifact(true);
+                    }}
+                    className="mt-3 px-3 py-1.5 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-600/50 rounded text-xs font-medium text-purple-300 transition-all"
+                  >
+                    💾 Save as Artifact
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -674,6 +691,24 @@ function BuilderChatModal({
             </button>
           </div>
         </div>
+
+        {/* Save Artifact Modal */}
+        <SaveArtifactModal
+          isOpen={showSaveArtifact}
+          onClose={() => setShowSaveArtifact(false)}
+          content={selectedMessageContent}
+          sessionId={existingSession?.id || nextSessionId}
+          messageIndex={selectedMessageIndex}
+          storyContext={storyContext}
+          onArtifactSaved={(artifact) => {
+            // Add to global artifacts
+            setBible(prev => ({
+              ...prev,
+              artifacts: [...(prev.artifacts || []), artifact]
+            }));
+            setShowSaveArtifact(false);
+          }}
+        />
       </div>
     </div>
   );

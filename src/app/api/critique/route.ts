@@ -9,54 +9,47 @@ const openai = new OpenAI({
 
 export async function POST(request: Request) {
   try {
-    const { bible }: { bible: StoryBible } = await request.json();
+    const { bible, mode, scope }: { 
+      bible: StoryBible; 
+      mode: string;
+      scope: { type: string; targetId?: string; targetName?: string };
+    } = await request.json();
 
-    // Build comprehensive context from all story elements
-    const context = buildStoryContext(bible);
+    // Build context based on scope
+    const context = buildStoryContext(bible, scope);
     const phase: StoryPhase = bible.phase || "discovery";
     const phaseInfo = getPhaseInfo(phase);
 
-    const systemPrompt = `You are an expert story analyst and editor. Analyze the provided story content with a focus appropriate to the current story phase.
+    // Mode-specific prompts
+    const modePrompts = {
+      structural: `Analyze the STRUCTURAL elements: plot architecture, pacing, stakes, cause-and-effect chains, and story beats. Focus on whether the story has a solid foundation and logical progression.`,
+      character: `Analyze CHARACTER elements: motivation consistency, character development, believability, internal contradictions, and whether characters act according to their established traits.`,
+      thematic: `Analyze THEMATIC elements: theme clarity, message resonance, thematic drift, and whether the themes are woven naturally into the story without being preachy.`,
+      continuity: `Perform a CONTINUITY AUDIT: find contradictions, timeline issues, inconsistent details, and any elements that break internal logic or established rules.`
+    };
 
-CURRENT PHASE: ${phaseInfo.name} (${phaseInfo.icon})
+    // Scope-specific instructions
+    const scopeInstructions = scope.type === "whole-story" 
+      ? "Analyze the entire story comprehensively."
+      : scope.type === "one-character"
+      ? `Focus ONLY on the character "${scope.targetName}" (ID: ${scope.targetId}). Analyze their consistency, development, and role in the story.`
+      : scope.type === "one-act"
+      ? "Focus on a specific act or section of the story."
+      : "Focus on evaluating a specific plot decision or story choice.";
+
+    const systemPrompt = `You are an expert story analyst. ${modePrompts[mode as keyof typeof modePrompts]}
+
+${scopeInstructions}
+
+CURRENT PHASE: ${phaseInfo.name}
 ${phaseInfo.description}
 
-PHASE-SPECIFIC ANALYSIS FOCUS:
-${phaseInfo.focus.map(f => `- ${f}`).join('\n')}
+Return your analysis as a JSON object with these exact keys:
+- strengths: array of specific things working well
+- issues: array of problems, inconsistencies, or weaknesses found
+- recommendations: array of actionable suggestions to improve
 
-${phase === "discovery" ? `
-In DISCOVERY phase, focus on:
-- **Strengths**: Clarity of concept, uniqueness, potential
-- **Gaps**: Unclear premise, vague themes, missing core elements
-- **Inconsistencies**: Contradictory concepts or unclear direction
-- **Similarities**: Derivative concepts or overused tropes
-- **Recommendations**: Ways to clarify and strengthen the core idea
-` : phase === "structure" ? `
-In STRUCTURE phase, focus on:
-- **Strengths**: Solid plot architecture, clear beats, good pacing
-- **Gaps**: Missing plot points, weak structure, unclear arcs
-- **Inconsistencies**: Plot holes, illogical progression, broken cause-effect
-- **Similarities**: Overused plot structures or predictable beats
-- **Recommendations**: Structural improvements and alternative frameworks
-` : phase === "development" ? `
-In DEVELOPMENT phase, focus on:
-- **Strengths**: Deep characterization, rich details, authentic world
-- **Gaps**: Shallow characters, missing details, underdeveloped relationships
-- **Inconsistencies**: Character behavior contradictions, world-building issues
-- **Similarities**: Stock characters or clichéd relationships
-- **Recommendations**: Ways to add depth, complexity, and authenticity
-` : `
-In REVISION phase, focus on:
-- **Strengths**: What's polished and working well
-- **Gaps**: Unresolved threads, missing payoffs, loose ends
-- **Inconsistencies**: Any remaining contradictions or logic issues
-- **Similarities**: Elements that still feel too similar to other works
-- **Recommendations**: Final polish, cuts, and tightening opportunities
-`}
-
-When mentioning specific elements, include references like [Character: Name], [Research: Topic], or [Builder: Session Title] so they can be clicked.
-
-Return your analysis as a JSON object with these exact keys: strengths, gaps, inconsistencies, similarities, recommendations. Each should be an array of strings.`;
+Be specific, surgical, and focused. Avoid overwhelming feedback - prioritize the most important points.`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
@@ -69,7 +62,14 @@ Return your analysis as a JSON object with these exact keys: strengths, gaps, in
     });
 
     const response = completion.choices[0].message.content;
-    const report = JSON.parse(response || "{}");
+    const analysisResult = JSON.parse(response || "{}");
+
+    // Add mode and scope to the report
+    const report = {
+      ...analysisResult,
+      mode,
+      scope
+    };
 
     return NextResponse.json({ report });
   } catch (error) {
@@ -81,10 +81,61 @@ Return your analysis as a JSON object with these exact keys: strengths, gaps, in
   }
 }
 
-function buildStoryContext(bible: StoryBible): string {
+function buildStoryContext(bible: StoryBible, scope: { type: string; targetId?: string; targetName?: string }): string {
   let context = `# STORY ANALYSIS REQUEST\n\n`;
   
-  // Basic Info
+  // If scoped to one character, focus only on that character
+  if (scope.type === "one-character" && scope.targetId) {
+    const character = bible.characters.find(c => c.id === scope.targetId);
+    if (!character) {
+      return "Character not found.";
+    }
+
+    context += `## Character Analysis: ${character.name}\n\n`;
+    context += `**Role**: ${character.role}\n`;
+    context += `**Logline**: ${character.logline}\n\n`;
+    context += `**Core Traits**:\n`;
+    context += `- Desire: ${character.desire}\n`;
+    context += `- Fear: ${character.fear}\n`;
+    context += `- Wound: ${character.wound}\n`;
+    context += `- Contradiction: ${character.contradiction}\n\n`;
+    context += `**Character Arc**:\n`;
+    context += `- Start: ${character.arc.start}\n`;
+    context += `- Midpoint: ${character.arc.midpoint}\n`;
+    context += `- End: ${character.arc.end}\n\n`;
+    
+    if (character.voice.cadence || character.voice.tells.length > 0) {
+      context += `**Voice**:\n`;
+      if (character.voice.cadence) context += `- Cadence: ${character.voice.cadence}\n`;
+      if (character.voice.tells.length > 0) context += `- Tells: ${character.voice.tells.join(", ")}\n`;
+      if (character.voice.tabooWords.length > 0) context += `- Taboo Words: ${character.voice.tabooWords.join(", ")}\n`;
+      context += `\n`;
+    }
+
+    if (character.relationships.length > 0) {
+      context += `**Relationships**:\n`;
+      character.relationships.forEach(rel => {
+        const otherChar = bible.characters.find(c => c.id === rel.characterId);
+        context += `- ${otherChar?.name || rel.characterId}: ${rel.dynamic}\n`;
+      });
+      context += `\n`;
+    }
+
+    // Include related research
+    const relatedResearch = bible.research.filter(r => 
+      r.linkedTo?.some(l => l.type === "character" && l.id === scope.targetId)
+    );
+    if (relatedResearch.length > 0) {
+      context += `**Related Research**:\n`;
+      relatedResearch.forEach(note => {
+        context += `- ${note.question}\n`;
+      });
+    }
+
+    return context;
+  }
+
+  // Otherwise, provide full story context
   context += `## Story Overview\n`;
   context += `Title: ${bible.title}\n`;
   context += `Premise: ${bible.premise}\n`;
@@ -99,65 +150,34 @@ function buildStoryContext(bible: StoryBible): string {
       context += `- Logline: ${char.logline}\n`;
       context += `- Desire: ${char.desire}\n`;
       context += `- Fear: ${char.fear}\n`;
-      context += `- Wound: ${char.wound}\n`;
       context += `- Contradiction: ${char.contradiction}\n`;
       context += `- Arc: ${char.arc.start} → ${char.arc.midpoint} → ${char.arc.end}\n`;
-      if (char.relationships.length > 0) {
-        context += `- Relationships: ${char.relationships.map(r => r.dynamic).join(", ")}\n`;
-      }
     });
-  } else {
-    context += `No characters defined yet.\n`;
   }
 
-  // Research
+  // Research (summarized)
   context += `\n## Research Notes (${bible.research.length})\n`;
   if (bible.research.length > 0) {
     bible.research.forEach(note => {
-      context += `\n### ${note.question}\n`;
-      note.bullets.forEach(bullet => {
-        context += `- ${bullet}\n`;
-      });
-      if (note.summary) {
-        context += `Summary: ${note.summary}\n`;
-      }
+      context += `- ${note.question}\n`;
     });
-  } else {
-    context += `No research conducted yet.\n`;
   }
 
-  // Builder Sessions
+  // Builder Sessions (summarized)
   const builderSessions = bible.builderSessions || [];
   context += `\n## Builder Sessions (${builderSessions.length})\n`;
   if (builderSessions.length > 0) {
     builderSessions.forEach(session => {
-      context += `\n### ${session.title}\n`;
-      if (session.summary) {
-        context += `Summary: ${session.summary}\n`;
-      }
-      context += `Conversation highlights:\n`;
-      // Include key messages (limit to avoid token overflow)
-      const keyMessages = session.messages.slice(-6); // Last 6 messages
-      keyMessages.forEach(msg => {
-        const preview = msg.content.substring(0, 200);
-        context += `- ${msg.role}: ${preview}${msg.content.length > 200 ? "..." : ""}\n`;
-      });
+      context += `- ${session.title}${session.summary ? `: ${session.summary}` : ""}\n`;
     });
-  } else {
-    context += `No builder sessions yet.\n`;
   }
 
   // Plot
   context += `\n## Plot Structure (${bible.plot.length} beats)\n`;
   if (bible.plot.length > 0) {
     bible.plot.forEach(beat => {
-      context += `\n### ${beat.label}\n`;
-      context += `- Summary: ${beat.summary}\n`;
-      context += `- Stakes: ${beat.stakes}\n`;
-      context += `- Turn: ${beat.turn}\n`;
+      context += `- ${beat.label}: ${beat.summary}\n`;
     });
-  } else {
-    context += `No plot structure defined yet.\n`;
   }
 
   return context;

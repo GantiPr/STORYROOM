@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useBible } from "@/hooks/useBible";
-import type { ResearchNote } from "@/lib/types";
+import type { ResearchNote, CanonEntry } from "@/lib/types";
+import { ConvertToCanonModal } from "@/components/ConvertToCanonModal";
 import Link from "next/link";
 
 type ParsedPoint = {
@@ -942,10 +943,12 @@ function ResearchNoteDetail({
   onDelete: () => void;
   onCancel: () => void;
 }) {
-  const { bible } = useBible();
+  const { bible, setBible } = useBible();
   const [editedNote, setEditedNote] = useState<ResearchNote>(note);
   const [newBullet, setNewBullet] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  const [selectedBullet, setSelectedBullet] = useState<string>("");
 
   useEffect(() => {
     setEditedNote(note);
@@ -994,6 +997,23 @@ function ResearchNoteDetail({
   const linkedCharacterIds = (editedNote.linkedTo || [])
     .filter(link => link.type === "character")
     .map(link => link.id);
+
+  const handleCanonCreated = (canonEntry: CanonEntry) => {
+    // Add to bible.canon array
+    setBible(prev => ({
+      ...prev,
+      canon: [...(prev.canon || []), canonEntry]
+    }));
+
+    // Add to note.canonEntries
+    setEditedNote(prev => ({
+      ...prev,
+      canonEntries: [...(prev.canonEntries || []), canonEntry]
+    }));
+
+    setShowConvertModal(false);
+    setHasUnsavedChanges(true);
+  };
 
   return (
     <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 shadow-xl p-8">
@@ -1063,15 +1083,29 @@ function ResearchNoteDetail({
           <label className="block text-sm font-medium text-zinc-300 mb-2">Research Notes</label>
           <div className="space-y-2 mb-3">
             {editedNote.bullets.map((bullet, idx) => (
-              <div key={idx} className="flex items-start gap-2 p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
-                <span className="text-zinc-400 mt-1">•</span>
-                <p className="flex-1 text-zinc-200">{bullet}</p>
-                <button
-                  onClick={() => handleRemoveBullet(idx)}
-                  className="text-red-400 hover:text-red-300 text-sm"
-                >
-                  ✕
-                </button>
+              <div key={idx} className="p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
+                <div className="flex items-start gap-2">
+                  <span className="text-zinc-400 mt-1">•</span>
+                  <p className="flex-1 text-zinc-200">{bullet}</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setSelectedBullet(bullet);
+                        setShowConvertModal(true);
+                      }}
+                      className="px-2 py-1 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-600/50 rounded text-xs font-medium text-blue-400 transition-all"
+                      title="Convert to Story Canon"
+                    >
+                      ⚡ Canon
+                    </button>
+                    <button
+                      onClick={() => handleRemoveBullet(idx)}
+                      className="text-red-400 hover:text-red-300 text-sm"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -1194,7 +1228,52 @@ function ResearchNoteDetail({
             </div>
           </div>
         )}
+
+        {/* Canon Entries */}
+        {editedNote.canonEntries && editedNote.canonEntries.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium text-zinc-300 mb-2">
+              ⚡ Story Canon ({editedNote.canonEntries.length})
+            </label>
+            <div className="space-y-3">
+              {editedNote.canonEntries.map((canon) => (
+                <div key={canon.id} className="p-4 bg-gradient-to-br from-purple-900/20 to-blue-900/20 rounded-lg border border-purple-700/30">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">
+                        {canon.type === 'world-rule' && '🌍'}
+                        {canon.type === 'character-habit' && '👤'}
+                        {canon.type === 'plot-constraint' && '⚡'}
+                        {canon.type === 'background-texture' && '✨'}
+                      </span>
+                      <span className="text-xs px-2 py-1 rounded-full bg-purple-600/30 text-purple-300 capitalize">
+                        {canon.type.replace('-', ' ')}
+                      </span>
+                    </div>
+                    <span className="text-xs text-zinc-500">{canon.sourceCitation}</span>
+                  </div>
+                  <p className="text-sm text-zinc-200 leading-relaxed">{canon.content}</p>
+                  {canon.appliedTo && (
+                    <div className="mt-2 text-xs text-purple-400">
+                      Applied to: {bible.characters.find(c => c.id === canon.appliedTo)?.name || canon.appliedTo}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Convert to Canon Modal */}
+      <ConvertToCanonModal
+        isOpen={showConvertModal}
+        onClose={() => setShowConvertModal(false)}
+        researchBullet={selectedBullet}
+        researchId={editedNote.id}
+        storyContext={bible}
+        onCanonCreated={handleCanonCreated}
+      />
     </div>
   );
 }

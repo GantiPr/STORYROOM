@@ -300,7 +300,7 @@ export default function ProjectPage() {
               </div>
 
               {/* Story Stats */}
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 <div className="bg-purple-900/20 backdrop-blur-sm rounded-xl border border-purple-700/30 p-6 text-center">
                   <div className="text-4xl font-bold text-purple-400 mb-2">{bible.characters.length}</div>
                   <div className="text-sm text-zinc-400">Characters</div>
@@ -312,6 +312,18 @@ export default function ProjectPage() {
                 <div className="bg-blue-900/20 backdrop-blur-sm rounded-xl border border-blue-700/30 p-6 text-center">
                   <div className="text-4xl font-bold text-blue-400 mb-2">{bible.builderSessions?.length || 0}</div>
                   <div className="text-sm text-zinc-400">Builder Sessions</div>
+                </div>
+                <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 backdrop-blur-sm rounded-xl border border-purple-700/30 p-6 text-center">
+                  <div className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent mb-2">
+                    {bible.canon?.length || 0}
+                  </div>
+                  <div className="text-sm text-zinc-400">Canon Entries</div>
+                </div>
+                <div className="bg-gradient-to-br from-blue-900/20 to-cyan-900/20 backdrop-blur-sm rounded-xl border border-blue-700/30 p-6 text-center">
+                  <div className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">
+                    {bible.artifacts?.length || 0}
+                  </div>
+                  <div className="text-sm text-zinc-400">Artifacts</div>
                 </div>
               </div>
             </div>

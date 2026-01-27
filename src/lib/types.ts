@@ -2,6 +2,22 @@ export type Mode = "builder" | "develop" | "research" | "critique";
 
 export type StoryPhase = "discovery" | "structure" | "development" | "revision";
 
+export type ArtifactType = "scene-sketch" | "beat-proposal" | "character-moment" | "dialogue-sample" | "world-detail";
+
+export type Artifact = {
+  id: string; // e.g. "ART1"
+  type: ArtifactType;
+  title: string;
+  content: string;
+  sourceSessionId: string; // Links back to builder session
+  sourceMessageIndex?: number; // Which message in the session
+  linkedToCanon?: string[]; // Canon entry IDs this influenced
+  linkedToCharacters?: string[]; // Character IDs
+  linkedToBeats?: string[]; // Plot beat IDs
+  createdAt: string;
+  tags?: string[];
+};
+
 export type BuilderSession = {
   id: string; // e.g. "BS1"
   title: string;
@@ -14,6 +30,7 @@ export type BuilderSession = {
     type: "character";
     id: string;
   }>;
+  artifacts?: Artifact[]; // Saved outputs from this session
   createdAt: string;
   updatedAt: string;
 };
@@ -37,6 +54,17 @@ export type ResearchNote = {
   }[];
   summary?: string; // AI-generated session summary
   tags?: string[]; // Primary keys/tags for organizing research
+  canonEntries?: CanonEntry[]; // Research converted to story canon
+};
+
+export type CanonEntry = {
+  id: string;
+  type: "world-rule" | "character-habit" | "plot-constraint" | "background-texture";
+  content: string;
+  sourceResearchId: string; // Links back to research note
+  sourceCitation: string; // e.g., "[S1]"
+  createdAt: string;
+  appliedTo?: string; // Character ID, plot beat ID, etc.
 };
 
 export type Character = {
@@ -75,7 +103,9 @@ export type StoryBible = {
   plot: PlotBeat[];
   research: ResearchNote[];
   builderSessions?: BuilderSession[];
+  artifacts?: Artifact[]; // All saved artifacts across sessions
   phase?: StoryPhase; // Current workflow phase
+  canon?: CanonEntry[]; // Story canon derived from research
 };
 
 export type Project = {
