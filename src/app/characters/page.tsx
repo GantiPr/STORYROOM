@@ -861,6 +861,38 @@ function CharacterDetailPanel({
             </div>
           </div>
         )}
+
+        {/* Linked Research Notes */}
+        {character.researchNotes && character.researchNotes.length > 0 && (
+          <div className="p-6 rounded-xl bg-gradient-to-br from-emerald-900/20 to-emerald-800/20 border border-emerald-700/30">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+              <span>📚</span>
+              <span>Research Notes</span>
+              <span className="text-sm text-emerald-400">({character.researchNotes.length})</span>
+            </h3>
+            <div className="space-y-3">
+              {character.researchNotes.map((noteId) => {
+                const note = allCharacters.find(() => false); // This will be replaced with actual research lookup
+                return (
+                  <div key={noteId} className="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-emerald-400">{noteId}</p>
+                        <p className="text-xs text-zinc-500 mt-1">Linked research - view in Research Library</p>
+                      </div>
+                      <a
+                        href="/research"
+                        className="text-xs text-emerald-400 hover:text-emerald-300"
+                      >
+                        View →
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -13,6 +13,10 @@ export type ResearchNote = {
   bullets: string[]; // each bullet should include citations like [S1]
   sources: ResearchSource[];
   createdAt: string;
+  linkedTo?: {
+    type: "character" | "plot" | "world";
+    id: string;
+  }[];
 };
 
 export type Character = {
@@ -31,6 +35,7 @@ export type Character = {
   };
   relationships: { characterId: string; dynamic: string }[];
   arc: { start: string; midpoint: string; end: string };
+  researchNotes?: string[]; // IDs of linked research notes
 };
 
 export type PlotBeat = {
