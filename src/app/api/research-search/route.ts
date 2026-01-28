@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { parseError } from "@/lib/reliability/errors";
+import { withTimeout, TIMEOUTS } from "@/lib/reliability/timeout";
+import { withRetry } from "@/lib/reliability/retry";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,39 +15,48 @@ export async function POST(req: NextRequest) {
     }
 
     // Use the existing web search with filters for scholarly sources
-    const searchResponse = await fetch(
-      `https://api.tavily.com/search`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          api_key: process.env.TAVILY_API_KEY,
-          query: query,
-          search_depth: "advanced",
-          include_domains: [
-            "scholar.google.com",
-            "jstor.org",
-            "arxiv.org",
-            "pubmed.ncbi.nlm.nih.gov",
-            "researchgate.net",
-            "academia.edu",
-            "sciencedirect.com",
-            "springer.com",
-            "wiley.com",
-            "nature.com",
-            "science.org",
-            "ieee.org",
-            "acm.org",
-            "britannica.com",
-            "wikipedia.org",
-            "gutenberg.org",
-            "archive.org"
-          ],
-          max_results: 10,
-        }),
-      }
+    // Add timeout and retry for reliability
+    const searchResponse = await withRetry(
+      async () => {
+        return withTimeout(
+          async () => {
+            return fetch(`https://api.tavily.com/search`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                api_key: process.env.TAVILY_API_KEY,
+                query: query,
+                search_depth: "advanced",
+                include_domains: [
+                  "scholar.google.com",
+                  "jstor.org",
+                  "arxiv.org",
+                  "pubmed.ncbi.nlm.nih.gov",
+                  "researchgate.net",
+                  "academia.edu",
+                  "sciencedirect.com",
+                  "springer.com",
+                  "wiley.com",
+                  "nature.com",
+                  "science.org",
+                  "ieee.org",
+                  "acm.org",
+                  "britannica.com",
+                  "wikipedia.org",
+                  "gutenberg.org",
+                  "archive.org"
+                ],
+                max_results: 10,
+              }),
+            });
+          },
+          TIMEOUTS.MCP_SEARCH,
+          "Research search timed out"
+        );
+      },
+      { maxAttempts: 2, initialDelay: 2000 }
     );
 
     if (!searchResponse.ok) {
@@ -71,8 +83,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ results });
   } catch (error) {
     console.error("Research search error:", error);
+    const structuredError = parseError(error);
+    
     return NextResponse.json(
-      { error: "Internal server error", results: [] },
+      { 
+        error: structuredError.userMessage,
+        code: structuredError.code,
+        retryable: structuredError.retryable,
+        retryAfter: structuredError.retryAfter,
+        results: [] 
+      },
       { status: 500 }
     );
   }

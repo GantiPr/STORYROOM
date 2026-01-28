@@ -1,0 +1,318 @@
+// Storyroom Canonical Database Schema
+// SQLite as the structured layer for all story data
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ============================================================================
+// PROJECTS & STORY BIBLE
+// ============================================================================
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Story Bible metadata
+  title       String?
+  premise     String?
+  genre       String?
+  themes      String?  // JSON array
+  phase       String   @default("discovery") // discovery, development, drafting, revision
+  
+  // Relations
+  characters      Character[]
+  plotBeats       PlotBeat[]
+  timelineEvents  TimelineEvent[]
+  locations       Location[]
+  relationships   CharacterRelationship[]
+  research        ResearchNote[]
+  builderSessions BuilderSession[]
+  canonEntries    CanonEntry[]
+  
+  @@map("projects")
+}
+
+// ============================================================================
+// CHARACTERS
+// ============================================================================
+
+model Character {
+  id            String   @id @default(cuid())
+  name          String
+  role          String   // protagonist, antagonist, supporting, other
+  logline       String   @default("")
+  
+  // Core traits
+  desire        String   @default("")
+  fear          String   @default("")
+  wound         String   @default("")
+  contradiction String   @default("")
+  
+  // Voice
+  voiceTone           String?
+  voiceRhythm         String?
+  voiceVocabulary     String?
+  voiceQuirks         String?
+  
+  // Arc
+  arcStart      String?
+  arcMidpoint   String?
+  arcEnd        String?
+  
+  // Metadata
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  relationshipsFrom CharacterRelationship[] @relation("CharacterFrom")
+  relationshipsTo   CharacterRelationship[] @relation("CharacterTo")
+  plotBeats         PlotBeatCharacter[]
+  timelineEvents    TimelineEventCharacter[]
+  canonEntries      CanonEntry[]
+  
+  @@index([projectId])
+  @@index([name])
+  @@map("characters")
+}
+
+model CharacterRelationship {
+  id          String   @id @default(cuid())
+  type        String   // ally, enemy, mentor, love-interest, rival, family, etc.
+  description String
+  dynamic     String?  // How they interact
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  fromCharacterId String
+  fromCharacter   Character @relation("CharacterFrom", fields: [fromCharacterId], references: [id], onDelete: Cascade)
+  
+  toCharacterId   String
+  toCharacter     Character @relation("CharacterTo", fields: [toCharacterId], references: [id], onDelete: Cascade)
+  
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@unique([fromCharacterId, toCharacterId])
+  @@index([projectId])
+  @@map("character_relationships")
+}
+
+// ============================================================================
+// PLOT STRUCTURE
+// ============================================================================
+
+model PlotBeat {
+  id          String   @id @default(cuid())
+  label       String   // e.g., "Inciting Incident", "Midpoint", "Climax"
+  summary     String
+  stakes      String   @default("")
+  turn        String   @default("")
+  order       Int      // Sequence order
+  act         Int?     // 1, 2, 3
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  characters  PlotBeatCharacter[]
+  timelineEvents TimelineEvent[]
+  
+  @@index([projectId, order])
+  @@map("plot_beats")
+}
+
+model PlotBeatCharacter {
+  id          String   @id @default(cuid())
+  role        String?  // Their role in this beat
+  
+  plotBeatId  String
+  plotBeat    PlotBeat @relation(fields: [plotBeatId], references: [id], onDelete: Cascade)
+  
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  
+  @@unique([plotBeatId, characterId])
+  @@map("plot_beat_characters")
+}
+
+// ============================================================================
+// TIMELINE & EVENTS
+// ============================================================================
+
+model TimelineEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  type        String   // scene, backstory, world-event, character-moment
+  
+  // Temporal positioning
+  timestamp   String?  // ISO date or relative time (e.g., "Day 1", "Year 1200")
+  order       Int      // Sequence order
+  duration    String?  // How long the event lasts
+  
+  // Story structure
+  act         Int?     // 1, 2, 3
+  chapter     Int?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  plotBeatId  String?
+  plotBeat    PlotBeat? @relation(fields: [plotBeatId], references: [id], onDelete: SetNull)
+  
+  locationId  String?
+  location    Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  
+  // Relations
+  characters  TimelineEventCharacter[]
+  
+  @@index([projectId, order])
+  @@index([projectId, timestamp])
+  @@map("timeline_events")
+}
+
+model TimelineEventCharacter {
+  id              String   @id @default(cuid())
+  role            String?  // Their role in this event
+  
+  timelineEventId String
+  timelineEvent   TimelineEvent @relation(fields: [timelineEventId], references: [id], onDelete: Cascade)
+  
+  characterId     String
+  character       Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  
+  @@unique([timelineEventId, characterId])
+  @@map("timeline_event_characters")
+}
+
+// ============================================================================
+// LOCATIONS & WORLDBUILDING
+// ============================================================================
+
+model Location {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // city, building, region, planet, etc.
+  description String
+  
+  // Hierarchy
+  parentId    String?
+  parent      Location?  @relation("LocationHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Location[] @relation("LocationHierarchy")
+  
+  // Metadata
+  significance String?  // Why this location matters
+  atmosphere   String?  // Mood, feeling
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  timelineEvents TimelineEvent[]
+  canonEntries   CanonEntry[]
+  
+  @@index([projectId])
+  @@index([name])
+  @@map("locations")
+}
+
+// ============================================================================
+// RESEARCH & SOURCES
+// ============================================================================
+
+model ResearchNote {
+  id          String   @id @default(cuid())
+  question    String
+  bullets     String   // JSON array
+  sources     String   // JSON array
+  summary     String?
+  tags        String?  // JSON array
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Relations
+  canonEntries CanonEntry[]
+  
+  @@index([projectId])
+  @@map("research_notes")
+}
+
+// ============================================================================
+// STORY CANON (Locked Facts)
+// ============================================================================
+
+model CanonEntry {
+  id              String   @id @default(cuid())
+  type            String   // world-rule, character-habit, plot-constraint, background-texture
+  content         String
+  reasoning       String?  // Why this matters
+  sourceCitation  String?  // e.g., "[S1]"
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  projectId       String
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  // Optional links
+  characterId     String?
+  character       Character? @relation(fields: [characterId], references: [id], onDelete: SetNull)
+  
+  locationId      String?
+  location        Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  
+  researchNoteId  String?
+  researchNote    ResearchNote? @relation(fields: [researchNoteId], references: [id], onDelete: SetNull)
+  
+  @@index([projectId])
+  @@index([type])
+  @@map("canon_entries")
+}
+
+// ============================================================================
+// BUILDER SESSIONS (Conversation History)
+// ============================================================================
+
+model BuilderSession {
+  id          String   @id @default(cuid())
+  title       String
+  messages    String   // JSON array
+  summary     String?
+  linkedTo    String?  // JSON array of character IDs
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  @@index([projectId])
+  @@map("builder_sessions")
+}
+

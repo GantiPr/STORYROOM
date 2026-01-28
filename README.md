@@ -4,6 +4,16 @@
 
 ## Features
 
+### 🔍 **MCP Research → Write** (NEW!)
+AI-powered research workflow that prevents hallucination:
+- **Search:** Use Brave Search MCP to find authentic sources
+- **Save:** Build a project-specific knowledge base
+- **Annotate:** Tag and add notes to organize research
+- **Generate:** AI creates outlines/scenes using ONLY your sources
+- **Cite:** Every fact is cited with [Source N] notation
+
+No more AI making up facts. Every detail is grounded in real research.
+
 ### 🎭 **Builder**
 Explore your story through interactive AI conversation. The AI challenges your assumptions, offers alternatives, and helps you develop:
 - Themes and core concepts
@@ -146,10 +156,68 @@ The AI in Storyroom is designed to be a **challenging creative partner**, not a 
 - **Framework**: Next.js 14 (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
-- **Database**: SQLite with Prisma ORM
+- **Database**: SQLite with Prisma ORM (Canonical Structured Layer)
 - **AI**: OpenAI GPT-4o and GPT-4o-mini
 - **Web Search**: Tavily API (optional)
-- **Storage**: Browser localStorage + SQLite database
+- **Storage**: SQLite for all story data (no more localStorage blobs!)
+- **MCP Integration**: Model Context Protocol with security layer
+
+## Database Architecture
+
+Storyroom uses **SQLite as the canonical structured layer** for all story data. No more loose text blobs!
+
+### Structured Entities
+- **Characters**: Proper fields for desire, fear, wound, contradiction, voice, arc
+- **Plot Beats**: Ordered structure with acts, stakes, and character links
+- **Timeline Events**: Chronological events with character and location links
+- **Locations**: Hierarchical worldbuilding with parent/child relationships
+- **Research**: Tagged notes with sources and citations
+- **Canon**: Locked story facts linked to research and entities
+- **Relationships**: Explicit character-to-character relationships
+
+### Clean Abstraction Layer
+```typescript
+// Simple, intuitive API
+const character = await getCharacter(id);
+const beats = await listBeats(projectId);
+await linkBeatToCharacter(beatId, characterId);
+const timeline = await getCharacterTimeline(characterId);
+```
+
+See `DATABASE_ARCHITECTURE.md` for complete documentation.
+
+## MCP Security & Permissions
+
+Storyroom includes a comprehensive security layer for MCP (Model Context Protocol) integration, enabling safe access to external tools like filesystem, GitHub, and databases.
+
+### Security Features
+
+- ✅ **Server Allowlist** - Only approved servers can be used
+- ✅ **Tool Permissions** - Granular control over which tools are available
+- ✅ **User Consent** - Explicit approval required for write operations
+- ✅ **Path Sandboxing** - Filesystem access restricted to workspace
+- ✅ **Pattern Blocking** - Automatic denial of dangerous operations
+- ✅ **Data Redaction** - Sensitive information removed from logs
+- ✅ **Scopes** - Read/write/execute permission levels
+
+### Quick Setup
+
+1. Set sandbox path in `.env.local`:
+```bash
+MCP_SANDBOX_PATH=/path/to/your/workspace
+```
+
+2. Review permissions in `src/lib/mcp/permissions.ts`
+
+3. Visit `/mcp-permissions` to manage tool access
+
+### Documentation
+
+- **Quick Start**: `MCP_SECURITY_QUICKSTART.md`
+- **Full Guide**: `MCP_SECURITY.md`
+- **Migration**: `MCP_MIGRATION_GUIDE.md`
+
+All MCP operations are logged, validated, and secured before execution.
 
 ## Project Structure
 
