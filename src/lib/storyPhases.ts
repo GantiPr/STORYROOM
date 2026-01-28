@@ -12,7 +12,7 @@ export const PHASE_INFO: Record<StoryPhase, {
     name: "Discovery",
     description: "Exploring ideas, premise, and core concepts",
     icon: "💡",
-    color: "from-yellow-600 to-orange-600",
+    color: "from-blue-600 to-blue-700",
     focus: [
       "What's the core idea?",
       "Who are the main characters?",
@@ -33,7 +33,7 @@ Be open and exploratory. Challenge ideas that feel derivative or unclear. Help t
     name: "Structure",
     description: "Building the story framework and plot architecture",
     icon: "🏗️",
-    color: "from-blue-600 to-cyan-600",
+    color: "from-blue-600 to-blue-700",
     focus: [
       "What's the story structure?",
       "What are the key plot beats?",
@@ -54,7 +54,7 @@ Be analytical. Challenge weak structure. Ensure cause-and-effect logic.`,
     name: "Development",
     description: "Deepening characters, scenes, and story details",
     icon: "✍️",
-    color: "from-purple-600 to-pink-600",
+    color: "from-blue-600 to-blue-700",
     focus: [
       "Are characters fully realized?",
       "Do scenes have depth?",
@@ -75,7 +75,7 @@ Be detail-oriented. Push for depth over breadth. Challenge shallow characterizat
     name: "Revision",
     description: "Refining, tightening, and fixing inconsistencies",
     icon: "🔍",
-    color: "from-red-600 to-orange-600",
+    color: "from-blue-600 to-blue-700",
     focus: [
       "Are there plot holes?",
       "Do character actions make sense?",

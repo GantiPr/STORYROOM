@@ -43,7 +43,7 @@ export function PhaseSelector({ currentPhase, onPhaseChange, compact = false }: 
       
       <p className="text-sm text-zinc-400 mb-4">{currentInfo.description}</p>
       
-      <div className="grid grid-cols-2 gap-2 mb-4">
+      <div className="grid grid-cols-2 gap-2">
         {phases.map((phase) => {
           const info = PHASE_INFO[phase];
           const isActive = phase === currentPhase;
@@ -54,30 +54,20 @@ export function PhaseSelector({ currentPhase, onPhaseChange, compact = false }: 
               onClick={() => onPhaseChange(phase)}
               className={`p-3 rounded-lg border transition-all text-left ${
                 isActive
-                  ? `bg-gradient-to-r ${info.color} border-transparent text-white`
-                  : "bg-zinc-800/50 border-zinc-700/50 hover:border-zinc-600 text-zinc-300 hover:text-white"
+                  ? `bg-gradient-to-r ${info.color} border-transparent text-white shadow-lg`
+                  : "bg-zinc-800/30 border-zinc-700/30 hover:border-zinc-600/50 text-zinc-400 hover:text-zinc-300"
               }`}
             >
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-lg">{info.icon}</span>
+                <span className={`text-lg ${isActive ? '' : 'opacity-50'}`}>{info.icon}</span>
                 <span className="font-medium text-sm">{info.name}</span>
               </div>
-              <p className="text-xs opacity-80 line-clamp-2">{info.description}</p>
+              {isActive && (
+                <p className="text-xs opacity-90 line-clamp-2">{info.description}</p>
+              )}
             </button>
           );
         })}
-      </div>
-      
-      <div className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700/50">
-        <h4 className="text-xs font-semibold text-zinc-400 mb-2">Focus Areas:</h4>
-        <ul className="space-y-1">
-          {currentInfo.focus.map((item, idx) => (
-            <li key={idx} className="text-xs text-zinc-300 flex items-start gap-2">
-              <span className="text-blue-400 mt-0.5">•</span>
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
       </div>
     </div>
   );

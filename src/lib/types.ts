@@ -107,6 +107,7 @@ export type StoryBible = {
   artifacts?: Artifact[]; // All saved artifacts across sessions
   phase?: StoryPhase; // Current workflow phase
   canon?: CanonEntry[]; // Story canon derived from research
+  timeline?: ConsistencyTimeline; // Generated timeline with consistency analysis
 };
 
 export type Project = {

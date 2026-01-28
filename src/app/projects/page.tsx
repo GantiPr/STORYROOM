@@ -28,8 +28,8 @@ export default function ProjectsPage() {
     setNewProjectDescription("");
     setShowCreateModal(false);
     
-    // Navigate to the project
-    router.push(`/project/${project.id}`);
+    // Navigate to the dashboard
+    router.push(`/dashboard`);
   };
 
   const handleDeleteProject = (projectId: string, e: React.MouseEvent) => {
@@ -46,8 +46,10 @@ export default function ProjectsPage() {
       <div className="container mx-auto px-6 py-12 max-w-7xl">
         {/* Header */}
         <div className="mb-12 text-center">
-          <h1 className="text-6xl font-bold bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent mb-4">
-            Storyroom
+          <h1 className="text-7xl font-bold mb-4 tracking-tight">
+            <span className="inline-block bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-gradient">
+              storyroom
+            </span>
           </h1>
           <p className="text-xl text-zinc-400">Your creative writing workspace</p>
         </div>
@@ -85,7 +87,7 @@ export default function ProjectsPage() {
               {projects.map(project => (
                 <div
                   key={project.id}
-                  onClick={() => router.push(`/project/${project.id}`)}
+                  onClick={() => router.push(`/dashboard`)}
                   className="group bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 hover:border-zinc-700 p-6 cursor-pointer transition-all hover:scale-105 hover:shadow-xl"
                 >
                   <div className="flex items-start justify-between mb-4">

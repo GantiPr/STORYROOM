@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useBible } from "@/hooks/useBible";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { WorkspaceNavigationBar } from "@/components/WorkspaceNavigationBar";
 
 type CritiqueMode = "structural" | "character" | "thematic" | "continuity";
 
@@ -86,9 +87,21 @@ export default function CritiquePage() {
               <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
                 Story Critique
               </h1>
-              <p className="text-zinc-400 mt-2 text-lg">AI-powered analysis of your story's strengths and weaknesses</p>
+              <p className="text-zinc-400 mt-2 text-lg">AI-powered tool that provides surgical analysis with focused, actionable feedback</p>
             </div>
             <div className="flex items-center gap-4">
+              <div className="group relative">
+                <button className="p-2 text-zinc-500 hover:text-zinc-300 transition-colors">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
+                <div className="absolute right-0 top-full mt-2 w-80 p-3 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                  <p className="text-sm text-zinc-300">
+                    <span className="font-semibold text-white">Why this matters:</span> Surgical analysis of specific story aspects (structure, character, theme, continuity) provides focused, actionable feedback instead of overwhelming general critiques.
+                  </p>
+                </div>
+              </div>
               {/* Save Status */}
               <div className="flex items-center gap-2 px-4 py-2 bg-zinc-800/50 rounded-lg border border-zinc-700/50">
                 {isSaving ? (
@@ -103,36 +116,11 @@ export default function CritiquePage() {
                   </>
                 )}
               </div>
-              
-              <Link
-                href="/builder"
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-all hover:scale-105"
-              >
-                🎭 Builder
-              </Link>
-              
-              <Link
-                href="/characters"
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition-all hover:scale-105"
-              >
-                👥 Characters
-              </Link>
-              
-              <Link
-                href="/research"
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-sm font-medium transition-all hover:scale-105"
-              >
-                📚 Research
-              </Link>
-              
-              <Link
-                href="/"
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-medium transition-all hover:scale-105 border border-zinc-700"
-              >
-                ← Projects
-              </Link>
             </div>
           </div>
+
+          {/* Workspace Navigation Bar */}
+          <WorkspaceNavigationBar currentPage="critique" bible={bible} />
         </div>
 
         {/* Content */}

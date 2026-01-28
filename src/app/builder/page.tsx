@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useBible } from "@/hooks/useBible";
-import type { BuilderSession, StoryPhase, Artifact } from "@/lib/types";
+import type { BuilderSession, StoryPhase } from "@/lib/types";
 import { SaveArtifactModal } from "@/components/SaveArtifactModal";
-import Link from "next/link";
 import { PhaseSelector } from "@/components/PhaseSelector";
+import { WorkspaceNavigationBar } from "@/components/WorkspaceNavigationBar";
 
 export default function BuilderPage() {
   const { bible, setBible, isLoaded, isSaving } = useBible();
@@ -79,9 +79,21 @@ export default function BuilderPage() {
               <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
                 Story Builder
               </h1>
-              <p className="text-zinc-400 mt-2 text-lg">Explore themes, conflicts, and scenarios with AI guidance</p>
+              <p className="text-zinc-400 mt-2 text-lg">AI-powered tool that helps you explore story possibilities and develop plot points</p>
             </div>
             <div className="flex items-center gap-4">
+              <div className="group relative">
+                <button className="p-2 text-zinc-500 hover:text-zinc-300 transition-colors">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
+                <div className="absolute right-0 top-full mt-2 w-80 p-3 bg-zinc-800 border border-zinc-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                  <p className="text-sm text-zinc-300">
+                    <span className="font-semibold text-white">Why this matters:</span> Interactive AI conversations help you explore story possibilities, test ideas, and develop plot points before committing - like brainstorming with a knowledgeable writing partner.
+                  </p>
+                </div>
+              </div>
               {/* Phase Selector */}
               <PhaseSelector 
                 currentPhase={bible.phase || "discovery"}
@@ -103,40 +115,15 @@ export default function BuilderPage() {
                   </>
                 )}
               </div>
-              
-              <Link
-                href="/characters"
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-sm font-medium transition-all hover:scale-105"
-              >
-                👥 Characters
-              </Link>
-              
-              <Link
-                href="/research"
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-sm font-medium transition-all hover:scale-105"
-              >
-                📚 Research
-              </Link>
-              
-              <Link
-                href="/critique"
-                className="px-4 py-2 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 rounded-lg text-sm font-medium transition-all hover:scale-105"
-              >
-                🔍 Critique
-              </Link>
-              
-              <Link
-                href="/projects"
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-medium transition-all hover:scale-105 border border-zinc-700"
-              >
-                ← Projects
-              </Link>
             </div>
           </div>
+
+          {/* Workspace Navigation Bar */}
+          <WorkspaceNavigationBar currentPage="builder" bible={bible} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Sessions List */}
+          {/* Sessions List - Left Column */}
           <div className="lg:col-span-1">
             <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 p-6 shadow-xl">
               <div className="flex items-center justify-between mb-6">
@@ -212,7 +199,7 @@ export default function BuilderPage() {
             </div>
           </div>
 
-          {/* Main Content Area */}
+          {/* Session Content - Right Column */}
           <div className="lg:col-span-2">
             {selectedSession ? (
               <SessionDetail session={selectedSession} />

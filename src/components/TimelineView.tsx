@@ -21,9 +21,6 @@ export function TimelineView({ timeline, isGenerating, onGenerate }: TimelineVie
             <span className="text-5xl">⏱️</span>
           </div>
           <h3 className="text-2xl font-semibold text-white mb-3">Consistency Timeline</h3>
-          <p className="text-zinc-400 mb-8 max-w-md mx-auto">
-            Generate a chronological timeline of all story events with consistency analysis
-          </p>
           <button
             onClick={onGenerate}
             className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium transition-all"
