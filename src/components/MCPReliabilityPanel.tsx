@@ -80,11 +80,19 @@ export default function MCPReliabilityPanel() {
   }, [autoRefresh]);
 
   if (loading) {
-    return <div className="p-4">Loading reliability stats...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-zinc-400">Loading reliability stats...</div>
+      </div>
+    );
   }
 
   if (!stats) {
-    return <div className="p-4">Failed to load reliability stats</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-red-400">Failed to load reliability stats</div>
+      </div>
+    );
   }
 
   const getStateColor = (state: string) => {
@@ -114,21 +122,28 @@ export default function MCPReliabilityPanel() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">MCP Reliability Monitor</h2>
+    <div className="container mx-auto px-6 py-8 max-w-7xl">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h2 className="text-4xl font-bold bg-gradient-to-r from-white to-zinc-400 bg-clip-text text-transparent">
+            MCP Reliability Monitor
+          </h2>
+          <p className="text-zinc-400 mt-2">Real-time monitoring of circuit breakers, caches, and concurrency</p>
+        </div>
         <div className="flex gap-2">
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
-            className={`px-3 py-1 rounded ${
-              autoRefresh ? 'bg-blue-500 text-white' : 'bg-gray-200'
+            className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              autoRefresh 
+                ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
             }`}
           >
             {autoRefresh ? '⏸️ Pause' : '▶️ Resume'}
           </button>
           <button
             onClick={fetchStats}
-            className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg font-medium transition-all"
           >
             🔄 Refresh
           </button>
@@ -136,28 +151,28 @@ export default function MCPReliabilityPanel() {
       </div>
 
       {/* Circuit Breakers */}
-      <div className="border rounded-lg p-4">
+      <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 p-6 mb-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold">Circuit Breakers</h3>
+          <h3 className="text-xl font-semibold text-white">Circuit Breakers</h3>
           <button
             onClick={() => resetCircuitBreaker()}
-            className="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm"
+            className="px-3 py-1 bg-red-900/30 text-red-400 rounded-lg hover:bg-red-900/50 text-sm font-medium transition-all"
           >
             Reset All
           </button>
         </div>
 
         {Object.keys(stats.circuitBreakers).length === 0 ? (
-          <p className="text-gray-500">No circuit breakers active</p>
+          <p className="text-center py-8 text-zinc-400">No circuit breakers active</p>
         ) : (
           <div className="space-y-3">
             {Object.entries(stats.circuitBreakers).map(([name, breaker]) => (
-              <div key={name} className="border rounded p-3 bg-gray-50">
+              <div key={name} className="border border-zinc-700/50 rounded-lg p-4 bg-zinc-800/30">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{getStateIcon(breaker.state)}</span>
-                      <span className="font-semibold">{name}</span>
+                      <span className="font-semibold text-white">{name}</span>
                       <span className={`text-sm font-medium ${getStateColor(breaker.state)}`}>
                         {breaker.state}
                       </span>
@@ -165,27 +180,27 @@ export default function MCPReliabilityPanel() {
 
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
-                        <span className="text-gray-600">Failures:</span>{' '}
-                        <span className="font-medium">{breaker.failureCount}</span>
+                        <span className="text-zinc-400">Failures:</span>{' '}
+                        <span className="font-medium text-white">{breaker.failureCount}</span>
                       </div>
                       {breaker.state === 'HALF_OPEN' && (
                         <div>
-                          <span className="text-gray-600">Successes:</span>{' '}
-                          <span className="font-medium">{breaker.successCount}</span>
+                          <span className="text-zinc-400">Successes:</span>{' '}
+                          <span className="font-medium text-white">{breaker.successCount}</span>
                         </div>
                       )}
                       {breaker.lastFailureTime && (
                         <div>
-                          <span className="text-gray-600">Last Failure:</span>{' '}
-                          <span className="font-medium">
+                          <span className="text-zinc-400">Last Failure:</span>{' '}
+                          <span className="font-medium text-white">
                             {new Date(breaker.lastFailureTime).toLocaleTimeString()}
                           </span>
                         </div>
                       )}
                       {breaker.nextAttemptTime && (
                         <div>
-                          <span className="text-gray-600">Retry At:</span>{' '}
-                          <span className="font-medium">
+                          <span className="text-zinc-400">Retry At:</span>{' '}
+                          <span className="font-medium text-white">
                             {new Date(breaker.nextAttemptTime).toLocaleTimeString()}
                           </span>
                         </div>
@@ -195,7 +210,7 @@ export default function MCPReliabilityPanel() {
 
                   <button
                     onClick={() => resetCircuitBreaker(name)}
-                    className="px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-xs"
+                    className="px-2 py-1 bg-blue-900/30 text-blue-400 rounded-lg hover:bg-blue-900/50 text-xs font-medium transition-all"
                   >
                     Reset
                   </button>
@@ -207,45 +222,45 @@ export default function MCPReliabilityPanel() {
       </div>
 
       {/* Concurrency */}
-      <div className="border rounded-lg p-4">
-        <h3 className="text-xl font-semibold mb-4">Concurrency Control</h3>
+      <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 p-6 mb-6">
+        <h3 className="text-xl font-semibold text-white mb-4">Concurrency Control</h3>
 
         {Object.keys(stats.concurrency).length === 0 ? (
-          <p className="text-gray-500">No concurrency controls active</p>
+          <p className="text-center py-8 text-zinc-400">No concurrency controls active</p>
         ) : (
           <div className="space-y-3">
             {Object.entries(stats.concurrency).map(([name, data]: [string, any]) => (
-              <div key={name} className="border rounded p-3 bg-gray-50">
-                <div className="font-semibold mb-2">{name}</div>
+              <div key={name} className="border border-zinc-700/50 rounded-lg p-3 bg-zinc-800/30">
+                <div className="font-semibold text-white mb-2">{name}</div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   {data.available !== undefined && (
                     <div>
-                      <span className="text-gray-600">Available:</span>{' '}
-                      <span className="font-medium">{data.available}</span>
+                      <span className="text-zinc-400">Available:</span>{' '}
+                      <span className="font-medium text-white">{data.available}</span>
                     </div>
                   )}
                   {data.queueLength !== undefined && (
                     <div>
-                      <span className="text-gray-600">Queue:</span>{' '}
-                      <span className="font-medium">{data.queueLength}</span>
+                      <span className="text-zinc-400">Queue:</span>{' '}
+                      <span className="font-medium text-white">{data.queueLength}</span>
                     </div>
                   )}
                   {data.tokens !== undefined && (
                     <div>
-                      <span className="text-gray-600">Tokens:</span>{' '}
-                      <span className="font-medium">{data.tokens.toFixed(1)}</span>
+                      <span className="text-zinc-400">Tokens:</span>{' '}
+                      <span className="font-medium text-white">{data.tokens.toFixed(1)}</span>
                     </div>
                   )}
                   {data.length !== undefined && (
                     <div>
-                      <span className="text-gray-600">Queue Length:</span>{' '}
-                      <span className="font-medium">{data.length}</span>
+                      <span className="text-zinc-400">Queue Length:</span>{' '}
+                      <span className="font-medium text-white">{data.length}</span>
                     </div>
                   )}
                   {data.running !== undefined && (
                     <div>
-                      <span className="text-gray-600">Running:</span>{' '}
-                      <span className="font-medium">{data.running ? 'Yes' : 'No'}</span>
+                      <span className="text-zinc-400">Running:</span>{' '}
+                      <span className="font-medium text-white">{data.running ? 'Yes' : 'No'}</span>
                     </div>
                   )}
                 </div>
@@ -256,45 +271,45 @@ export default function MCPReliabilityPanel() {
       </div>
 
       {/* Caches */}
-      <div className="border rounded-lg p-4">
+      <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 p-6 mb-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold">Caches</h3>
+          <h3 className="text-xl font-semibold text-white">Caches</h3>
           <button
             onClick={() => clearCache()}
-            className="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 text-sm"
+            className="px-3 py-1 bg-red-900/30 text-red-400 rounded-lg hover:bg-red-900/50 text-sm font-medium transition-all"
           >
             Clear All
           </button>
         </div>
 
         {Object.keys(stats.caches).length === 0 ? (
-          <p className="text-gray-500">No caches active</p>
+          <p className="text-center py-8 text-zinc-400">No caches active</p>
         ) : (
           <div className="space-y-3">
             {Object.entries(stats.caches).map(([name, cache]: [string, any]) => (
-              <div key={name} className="border rounded p-3 bg-gray-50">
+              <div key={name} className="border border-zinc-700/50 rounded-lg p-3 bg-zinc-800/30">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <div className="font-semibold mb-2">{name}</div>
+                    <div className="font-semibold text-white mb-2">{name}</div>
                     <div className="grid grid-cols-3 gap-2 text-sm">
                       <div>
-                        <span className="text-gray-600">Size:</span>{' '}
-                        <span className="font-medium">
+                        <span className="text-zinc-400">Size:</span>{' '}
+                        <span className="font-medium text-white">
                           {cache.size}/{cache.maxSize}
                         </span>
                       </div>
                       <div>
-                        <span className="text-gray-600">Hits:</span>{' '}
-                        <span className="font-medium">{cache.totalAccess}</span>
+                        <span className="text-zinc-400">Hits:</span>{' '}
+                        <span className="font-medium text-white">{cache.totalAccess}</span>
                       </div>
                       <div>
-                        <span className="text-gray-600">Hit Rate:</span>{' '}
-                        <span className="font-medium">{cache.hitRate.toFixed(2)}</span>
+                        <span className="text-zinc-400">Hit Rate:</span>{' '}
+                        <span className="font-medium text-white">{cache.hitRate.toFixed(2)}</span>
                       </div>
                       {cache.expiredCount > 0 && (
                         <div>
-                          <span className="text-gray-600">Expired:</span>{' '}
-                          <span className="font-medium text-yellow-600">
+                          <span className="text-zinc-400">Expired:</span>{' '}
+                          <span className="font-medium text-yellow-400">
                             {cache.expiredCount}
                           </span>
                         </div>
@@ -304,7 +319,7 @@ export default function MCPReliabilityPanel() {
 
                   <button
                     onClick={() => clearCache(name)}
-                    className="px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-xs"
+                    className="px-2 py-1 bg-blue-900/30 text-blue-400 rounded-lg hover:bg-blue-900/50 text-xs font-medium transition-all"
                   >
                     Clear
                   </button>
@@ -315,7 +330,7 @@ export default function MCPReliabilityPanel() {
         )}
       </div>
 
-      <div className="text-xs text-gray-500 text-center">
+      <div className="text-xs text-zinc-500 text-center">
         Last updated: {new Date(stats.timestamp).toLocaleString()}
       </div>
     </div>

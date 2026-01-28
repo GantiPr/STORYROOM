@@ -56,6 +56,30 @@ export const MCP_SERVERS: Record<string, MCPServerConfig> = {
     },
     enabled: true, // Enabled for research features
   },
+
+  // AgentQL MCP Server - Web scraping and automation
+  agentql: {
+    name: 'AgentQL',
+    command: 'npx',
+    args: ['-y', 'agentql-mcp'],
+    transport: 'stdio',
+    env: {
+      AGENTQL_API_KEY: process.env.AGENTQL_API_KEY || '',
+    },
+    enabled: true, // Enable after adding AGENTQL_API_KEY to .env.local
+  },
+
+  // Bright Data MCP Server - Web scraping proxy and data collection
+  brightdata: {
+    name: 'Bright Data',
+    command: 'npx',
+    args: ['-y', '@brightdata/mcp-server'],
+    transport: 'stdio',
+    env: {
+      BRIGHTDATA_API_KEY: process.env.BRIGHTDATA_API_KEY || '',
+    },
+    enabled: true, // Enable after adding BRIGHTDATA_API_KEY to .env.local
+  },
 };
 
 // Get all enabled servers

@@ -93,9 +93,11 @@ export default function MCPTestPage() {
         ],
       });
       
+      const createSuccess = createResult && createResult.content && createResult.content.length > 0;
+      
       updateTest(2, {
-        status: createResult && !createResult.isError ? 'passed' : 'failed',
-        message: createResult && !createResult.isError
+        status: createSuccess ? 'passed' : 'failed',
+        message: createSuccess
           ? `Created entity: ${testEntityName}`
           : 'Create operation failed',
         duration: Date.now() - start3,
@@ -124,9 +126,11 @@ export default function MCPTestPage() {
         entityNames: [testEntityName],
       });
       
+      const deleteSuccess = deleteResult && deleteResult.content && deleteResult.content.length > 0;
+      
       updateTest(4, {
-        status: deleteResult && !deleteResult.isError ? 'passed' : 'failed',
-        message: deleteResult && !deleteResult.isError
+        status: deleteSuccess ? 'passed' : 'failed',
+        message: deleteSuccess
           ? 'Entity deleted successfully'
           : 'Delete operation failed',
         duration: Date.now() - start5,
@@ -156,7 +160,8 @@ export default function MCPTestPage() {
 
     try {
       const args = JSON.parse(toolArgs);
-      const toolResult = await callTool(selectedServer, selectedTool, args);
+      // Use callToolWithConsent to automatically handle consent prompts
+      const toolResult = await callToolWithConsent(selectedServer, selectedTool, args);
       setResult(toolResult);
     } catch (err: any) {
       setResult({ error: err.message });

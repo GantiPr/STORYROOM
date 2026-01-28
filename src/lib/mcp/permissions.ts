@@ -39,6 +39,20 @@ export const SERVER_PERMISSIONS: Record<string, ServerPermission> = {
     requiresUserConsent: false,
   },
 
+  // AgentQL - Web scraping and automation
+  agentql: {
+    enabled: true,
+    defaultScope: 'execute',
+    requiresUserConsent: true, // Requires consent for web automation
+  },
+
+  // Bright Data - Web scraping proxy and data collection
+  brightdata: {
+    enabled: true,
+    defaultScope: 'execute',
+    requiresUserConsent: true, // Requires consent for web scraping
+  },
+
   // Filesystem - HIGH RISK - read-only by default
   filesystem: {
     enabled: true,
