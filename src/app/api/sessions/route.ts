@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import type { StoryBible } from "@/lib/types";
+import type { StoryBible, Character as StoryCharacter, PlotBeat as StoryPlotBeat, ResearchNote as StoryResearchNote, BuilderSession as StoryBuilderSession } from "@/lib/types";
+import type { Character, PlotBeat, ResearchNote, BuilderSession } from "@prisma/client";
 
 // GET - Load the latest session or all sessions
 export async function GET(request: Request) {
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
         premise: session.premise,
         genre: session.genre,
         themes: JSON.parse(session.themes),
-        characters: session.characters.map(c => ({
+        characters: session.characters.map((c: Character) => ({
           id: c.id,
           name: c.name,
           role: c.role as any,
@@ -43,21 +44,21 @@ export async function GET(request: Request) {
           relationships: JSON.parse(c.relationships),
           arc: JSON.parse(c.arc),
         })),
-        plot: session.plotBeats.map(p => ({
+        plot: session.plotBeats.map((p: PlotBeat) => ({
           id: p.id,
           label: p.label,
           summary: p.summary,
           stakes: p.stakes,
           turn: p.turn,
         })),
-        research: session.research.map(r => ({
+        research: session.research.map((r: ResearchNote) => ({
           id: r.id,
           question: r.question,
           bullets: JSON.parse(r.bullets),
           sources: JSON.parse(r.sources),
           createdAt: r.createdAt,
         })),
-        builderSessions: session.builderSessions?.map(b => ({
+        builderSessions: session.builderSessions?.map((b: BuilderSession) => ({
           id: b.id,
           title: b.title,
           messages: JSON.parse(b.messages),
@@ -127,7 +128,7 @@ export async function POST(request: Request) {
     // Create characters
     if (bible.characters.length > 0) {
       await prisma.character.createMany({
-        data: bible.characters.map(c => ({
+        data: bible.characters.map((c: StoryCharacter) => ({
           id: c.id,
           name: c.name,
           role: c.role,
@@ -147,7 +148,7 @@ export async function POST(request: Request) {
     // Create plot beats
     if (bible.plot.length > 0) {
       await prisma.plotBeat.createMany({
-        data: bible.plot.map(p => ({
+        data: bible.plot.map((p: StoryPlotBeat) => ({
           id: p.id,
           label: p.label,
           summary: p.summary,
@@ -161,7 +162,7 @@ export async function POST(request: Request) {
     // Create research notes
     if (bible.research.length > 0) {
       await prisma.researchNote.createMany({
-        data: bible.research.map(r => ({
+        data: bible.research.map((r: StoryResearchNote) => ({
           id: r.id,
           question: r.question,
           bullets: JSON.stringify(r.bullets),
@@ -175,7 +176,7 @@ export async function POST(request: Request) {
     // Create builder sessions
     if (bible.builderSessions && bible.builderSessions.length > 0) {
       await prisma.builderSession.createMany({
-        data: bible.builderSessions.map(b => ({
+        data: bible.builderSessions.map((b: StoryBuilderSession) => ({
           id: b.id,
           title: b.title,
           messages: JSON.stringify(b.messages),
