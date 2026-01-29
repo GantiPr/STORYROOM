@@ -185,15 +185,31 @@ export default function DashboardPage() {
 
         {/* Content */}
         {!hasContent ? (
-          <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 shadow-xl p-12">
-            <div className="text-center">
-              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
-                <span className="text-5xl">✨</span>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <div className="bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800/50 shadow-xl p-12">
+                <div className="text-center">
+                  <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center">
+                    <span className="text-5xl">✨</span>
+                  </div>
+                  <h3 className="text-2xl font-semibold text-white mb-3">Start Building Your Story</h3>
+                  <p className="text-zinc-400 mb-8 max-w-md mx-auto">
+                    Begin by creating characters, conducting research, or exploring ideas in the builder.
+                  </p>
+                </div>
               </div>
-              <h3 className="text-2xl font-semibold text-white mb-3">Start Building Your Story</h3>
-              <p className="text-zinc-400 mb-8 max-w-md mx-auto">
-                Begin by creating characters, conducting research, or exploring ideas in the builder.
-              </p>
+            </div>
+            
+            {/* Sidebar - Workspace Navigation */}
+            <div className="space-y-4">
+              {/* Phase Selector */}
+              <PhaseSelector 
+                currentPhase={bible.phase || "discovery"}
+                onPhaseChange={handlePhaseChange}
+              />
+              
+              {/* Workspace Navigation */}
+              <WorkspaceNavigation currentPage="dashboard" bible={bible} />
             </div>
           </div>
         ) : (
