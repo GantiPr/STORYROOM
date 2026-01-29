@@ -346,7 +346,7 @@ export default function CharactersPage() {
                   </div>
                 </div>
               ) : (
-                sortedCharacters.map((character) => (
+                sortedCharacters.map((character: Character) => (
                   <div
                     key={character.id}
                     onClick={() => {
@@ -435,7 +435,8 @@ export default function CharactersPage() {
                             key={character.id}
                             onClick={() => {
                               // Toggle selection - if clicking the same character, deselect it
-                              if (selectedCharacter?.id === character.id) {
+                              const currentChar = selectedCharacter as Character | null;
+                              if (currentChar?.id === character.id) {
                                 setSelectedCharacter(null);
                                 setIsEditing(false);
                                 setIsCreating(false);

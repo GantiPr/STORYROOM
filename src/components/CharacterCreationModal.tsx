@@ -441,7 +441,11 @@ export default function CharacterCreationModal({ isOpen, onClose, onSave, nextCh
                     value={currentCharacter.voice?.cadence || ""}
                     onChange={(e) => setCurrentCharacter(prev => ({ 
                       ...prev, 
-                      voice: { ...prev.voice, cadence: e.target.value }
+                      voice: { 
+                        cadence: e.target.value,
+                        tells: prev.voice?.tells || [],
+                        tabooWords: prev.voice?.tabooWords || []
+                      }
                     }))}
                     placeholder="How they speak"
                     className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -455,8 +459,9 @@ export default function CharacterCreationModal({ isOpen, onClose, onSave, nextCh
                     onChange={(e) => setCurrentCharacter(prev => ({ 
                       ...prev, 
                       voice: { 
-                        ...prev.voice, 
-                        tells: e.target.value ? e.target.value.split(',').map(s => s.trim()).filter(s => s !== '') : []
+                        cadence: prev.voice?.cadence || "",
+                        tells: e.target.value ? e.target.value.split(',').map(s => s.trim()).filter(s => s !== '') : [],
+                        tabooWords: prev.voice?.tabooWords || []
                       }
                     }))}
                     placeholder="Unique phrases, habits"
@@ -471,7 +476,8 @@ export default function CharacterCreationModal({ isOpen, onClose, onSave, nextCh
                     onChange={(e) => setCurrentCharacter(prev => ({ 
                       ...prev, 
                       voice: { 
-                        ...prev.voice, 
+                        cadence: prev.voice?.cadence || "",
+                        tells: prev.voice?.tells || [],
                         tabooWords: e.target.value ? e.target.value.split(',').map(s => s.trim()).filter(s => s !== '') : []
                       }
                     }))}
@@ -490,7 +496,11 @@ export default function CharacterCreationModal({ isOpen, onClose, onSave, nextCh
                     value={currentCharacter.arc?.start || ""}
                     onChange={(e) => setCurrentCharacter(prev => ({ 
                       ...prev, 
-                      arc: { ...prev.arc, start: e.target.value }
+                      arc: { 
+                        start: e.target.value,
+                        midpoint: prev.arc?.midpoint || "",
+                        end: prev.arc?.end || ""
+                      }
                     }))}
                     placeholder="Where they begin"
                     rows={2}
@@ -503,7 +513,11 @@ export default function CharacterCreationModal({ isOpen, onClose, onSave, nextCh
                     value={currentCharacter.arc?.midpoint || ""}
                     onChange={(e) => setCurrentCharacter(prev => ({ 
                       ...prev, 
-                      arc: { ...prev.arc, midpoint: e.target.value }
+                      arc: { 
+                        start: prev.arc?.start || "",
+                        midpoint: e.target.value,
+                        end: prev.arc?.end || ""
+                      }
                     }))}
                     placeholder="Key transformation"
                     rows={2}
@@ -516,7 +530,11 @@ export default function CharacterCreationModal({ isOpen, onClose, onSave, nextCh
                     value={currentCharacter.arc?.end || ""}
                     onChange={(e) => setCurrentCharacter(prev => ({ 
                       ...prev, 
-                      arc: { ...prev.arc, end: e.target.value }
+                      arc: { 
+                        start: prev.arc?.start || "",
+                        midpoint: prev.arc?.midpoint || "",
+                        end: e.target.value
+                      }
                     }))}
                     placeholder="Where they end up"
                     rows={2}
