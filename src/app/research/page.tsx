@@ -455,7 +455,7 @@ function ResearchChatModal({
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let assistantMessage = "";
-      let tempMessages = [...messages, userMessage];
+      const tempMessages = [...messages, userMessage];
 
       if (reader) {
         while (true) {
