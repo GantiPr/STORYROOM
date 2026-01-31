@@ -565,7 +565,7 @@ function BuilderChatModal({
             {storyContext.characters.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 <span className="text-xs text-zinc-500 self-center">Link to:</span>
-                {storyContext.characters.map((char: any) => {
+                {storyContext.characters.map((char: { id: string; name: string }) => {
                   const isLinked = linkedCharacters.includes(char.id);
                   return (
                     <button

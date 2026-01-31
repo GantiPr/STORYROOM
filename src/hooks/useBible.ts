@@ -27,8 +27,8 @@ export function useBible() {
         // Load from projects
         const projectsData = localStorage.getItem("storyroom-projects");
         if (projectsData) {
-          const projects = JSON.parse(projectsData);
-          const activeProject = projects.find((p: any) => p.id === activeProjectId);
+          const projects = JSON.parse(projectsData) as Array<{ id: string; bible: StoryBible }>;
+          const activeProject = projects.find((p) => p.id === activeProjectId);
           
           if (activeProject) {
             const bibleWithDefaults = {
@@ -73,8 +73,8 @@ export function useBible() {
         if (activeProjectId) {
           const projectsData = localStorage.getItem("storyroom-projects");
           if (projectsData) {
-            const projects = JSON.parse(projectsData);
-            const updatedProjects = projects.map((p: any) => 
+            const projects = JSON.parse(projectsData) as Array<{ id: string; bible: StoryBible; updatedAt: string }>;
+            const updatedProjects = projects.map((p) => 
               p.id === activeProjectId 
                 ? { ...p, bible: newBible, updatedAt: new Date().toISOString() }
                 : p

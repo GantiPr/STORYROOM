@@ -1,6 +1,6 @@
 "use client";
 
-import type { StoryBible } from "@/lib/types";
+import type { StoryBible, Character } from "@/lib/types";
 
 type Props = {
   bible: StoryBible;
@@ -94,7 +94,7 @@ export default function BiblePanel({ bible, setBible }: Props) {
                       value={c.role}
                       onChange={(e) => {
                         const updatedCharacters = [...bible.characters];
-                        updatedCharacters[index] = { ...c, role: e.target.value as any };
+                        updatedCharacters[index] = { ...c, role: e.target.value as Character['role'] };
                         setBible({ ...bible, characters: updatedCharacters });
                       }}
                     >

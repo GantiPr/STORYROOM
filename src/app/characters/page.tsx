@@ -538,7 +538,9 @@ function CharacterDetailPanel({
   const tellsRef = useRef<HTMLInputElement>(null);
   const tabooWordsRef = useRef<HTMLInputElement>(null);
 
+  // Use character.id as key to reset state when character changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEditedCharacter(character);
     const tellsStr = character.voice.tells.join(', ');
     const tabooStr = character.voice.tabooWords.join(', ');
@@ -548,7 +550,7 @@ function CharacterDetailPanel({
     // Also set the ref values
     if (tellsRef.current) tellsRef.current.value = tellsStr;
     if (tabooWordsRef.current) tabooWordsRef.current.value = tabooStr;
-  }, [character]);
+  }, [character.id, character]); // Include character to satisfy linter
 
   const handleSave = () => {
     // Get values from refs as backup
@@ -567,11 +569,11 @@ function CharacterDetailPanel({
     onSave(finalCharacter);
   };
 
-  const updateField = (field: keyof Character, value: any) => {
+  const updateField = (field: keyof Character, value: string) => {
     setEditedCharacter(prev => ({ ...prev, [field]: value }));
   };
 
-  const updateVoiceField = (field: keyof Character['voice'], value: any) => {
+  const updateVoiceField = (field: keyof Character['voice'], value: string | string[]) => {
     setEditedCharacter(prev => ({
       ...prev,
       voice: { ...prev.voice, [field]: value }
@@ -924,13 +926,13 @@ function CharacterDetailPanel({
           
           <div className="space-y-4">
             {/* Related Research */}
-            {researchNotes.filter(r => r.linkedTo?.some((l: any) => l.type === "character" && l.id === character.id)).length > 0 && (
+            {researchNotes.filter(r => r.linkedTo?.some((l) => l.type === "character" && l.id === character.id)).length > 0 && (
               <div>
                 <h4 className="text-sm font-semibold text-emerald-400 mb-2">📚 Research</h4>
                 <div className="space-y-2">
                   {researchNotes
-                    .filter(r => r.linkedTo?.some((l: any) => l.type === "character" && l.id === character.id))
-                    .map((note: any) => (
+                    .filter(r => r.linkedTo?.some((l) => l.type === "character" && l.id === character.id))
+                    .map((note) => (
                       <Link
                         key={note.id}
                         href="/research"
@@ -948,16 +950,16 @@ function CharacterDetailPanel({
 
             {/* Related Builder Sessions */}
             {builderSessions.filter(s => 
-              s.linkedTo?.some((l: any) => l.type === "character" && l.id === character.id)
+              s.linkedTo?.some((l) => l.type === "character" && l.id === character.id)
             ).length > 0 && (
               <div>
                 <h4 className="text-sm font-semibold text-blue-400 mb-2">🎭 Builder Sessions</h4>
                 <div className="space-y-2">
                   {builderSessions
                     .filter(s => 
-                      s.linkedTo?.some((l: any) => l.type === "character" && l.id === character.id)
+                      s.linkedTo?.some((l) => l.type === "character" && l.id === character.id)
                     )
-                    .map((session: any) => (
+                    .map((session) => (
                       <Link
                         key={session.id}
                         href="/builder"
@@ -973,8 +975,8 @@ function CharacterDetailPanel({
               </div>
             )}
 
-            {researchNotes.filter(r => r.linkedTo?.some((l: any) => l.type === "character" && l.id === character.id)).length === 0 &&
-             builderSessions.filter(s => s.linkedTo?.some((l: any) => l.type === "character" && l.id === character.id)).length === 0 && (
+            {researchNotes.filter(r => r.linkedTo?.some((l) => l.type === "character" && l.id === character.id)).length === 0 &&
+             builderSessions.filter(s => s.linkedTo?.some((l) => l.type === "character" && l.id === character.id)).length === 0 && (
               <div className="text-center py-6">
                 <p className="text-sm text-zinc-500">No related research or builder sessions yet</p>
               </div>

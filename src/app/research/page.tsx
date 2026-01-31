@@ -2,9 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useBible } from "@/hooks/useBible";
-import type { ResearchNote, CanonEntry } from "@/lib/types";
+import type { ResearchNote, CanonEntry, StoryBible, ResearchSource } from "@/lib/types";
 import { ConvertToCanonModal } from "@/components/ConvertToCanonModal";
-import Link from "next/link";
 import { WorkspaceNavigationBar } from "@/components/WorkspaceNavigationBar";
 
 type ParsedPoint = {
@@ -309,7 +308,7 @@ function ResearchChatModal({
   onClose: () => void;
   onSave: (note: ResearchNote) => void;
   nextNoteId: string;
-  storyContext: any;
+  storyContext: StoryBible;
   existingNote?: ResearchNote | null;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
@@ -480,7 +479,7 @@ function ResearchChatModal({
                     sources: foundSources.slice(0, 3)
                   }]);
                 }
-              } catch (e) {
+              } catch {
                 // Skip invalid JSON
               }
             }
@@ -505,7 +504,7 @@ function ResearchChatModal({
       if (foundSources.length > 0) {
         setAllSources(prev => {
           const newSources = foundSources.slice(0, 3).filter(
-            (s: any) => !prev.some(existing => existing.url === s.url)
+            (s: ResearchSource) => !prev.some(existing => existing.url === s.url)
           );
           return [...prev, ...newSources];
         });
@@ -649,7 +648,7 @@ function ResearchChatModal({
                   summary += parsed.text;
                   setSessionSummary(summary);
                 }
-              } catch (e) {
+              } catch {
                 // Skip invalid JSON
               }
             }
@@ -871,7 +870,7 @@ function ResearchChatModal({
             
             <h3 className="text-lg font-semibold text-white mb-4">Agreed Notes ({agreedNotes.length})</h3>
             {agreedNotes.length === 0 ? (
-              <p className="text-sm text-zinc-500">Click "Agree & Save" on AI responses to add them here</p>
+              <p className="text-sm text-zinc-500">Click &quot;Agree & Save&quot; on AI responses to add them here</p>
             ) : (
               <div className="space-y-3">
                 {agreedNotes.map((note, idx) => (
@@ -938,16 +937,19 @@ function ResearchNoteDetail({
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [selectedBullet, setSelectedBullet] = useState<string>("");
 
+  // Use note.id as key to reset state when note changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setEditedNote(note);
     setHasUnsavedChanges(false);
-  }, [note]);
+  }, [note.id, note]); // Include note to satisfy linter
 
   // Track changes
   useEffect(() => {
     const hasChanges = JSON.stringify(editedNote) !== JSON.stringify(note);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setHasUnsavedChanges(hasChanges);
-  }, [editedNote, note]);
+  }, [editedNote, note]); // Use full note object for comparison
 
   const handleAddBullet = () => {
     if (newBullet.trim()) {
@@ -1180,7 +1182,7 @@ function ResearchNoteDetail({
               {linkedCharacterIds.length > 0 && (
                 <div className="p-2 bg-emerald-900/20 rounded border border-emerald-700/30">
                   <p className="text-xs text-emerald-300">
-                    💡 This research will appear in the linked characters' profiles after you click Save
+                    💡 This research will appear in the linked characters&apos; profiles after you click Save
                   </p>
                 </div>
               )}

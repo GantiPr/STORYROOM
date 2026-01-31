@@ -1,4 +1,4 @@
-import type { Character, StoryBible } from "./types";
+import type { Character } from "./types";
 
 export type IntegrityIssue = {
   type: "missing-core" | "arc-stall" | "motivation-gap" | "contradiction-weak" | "fear-ignored";
@@ -15,7 +15,7 @@ export type CharacterIntegrity = {
   strengths: string[];
 };
 
-export function analyzeCharacterIntegrity(character: Character, bible: StoryBible): CharacterIntegrity {
+export function analyzeCharacterIntegrity(character: Character): CharacterIntegrity {
   const issues: IntegrityIssue[] = [];
   const strengths: string[] = [];
   let score = 100;

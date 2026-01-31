@@ -10,7 +10,7 @@ import { calculateStoryHealth, type HealthIndicator, type NextAction } from "@/l
 import { WorkspaceNavigation } from "@/components/WorkspaceNavigation";
 
 export default function DashboardPage() {
-  const { projects, activeProjectId, setActiveProjectId, isLoaded, updateProjectBible } = useProjects();
+  const { projects, activeProjectId, isLoaded, updateProjectBible } = useProjects();
   const router = useRouter();
   const [project, setProject] = useState<Project | null>(null);
   const [summary, setSummary] = useState<string>("");
@@ -126,14 +126,7 @@ export default function DashboardPage() {
       case 'good': return '🟢';
       case 'warning': return '🟡';
       case 'needs-attention': return '🔴';
-    }
-  };
-
-  const getPriorityColor = (priority: NextAction['priority']) => {
-    switch (priority) {
-      case 'high': return 'border-red-600/50 bg-red-900/20';
-      case 'medium': return 'border-yellow-600/50 bg-yellow-900/20';
-      case 'low': return 'border-blue-600/50 bg-blue-900/20';
+      default: return '⚪';
     }
   };
 
@@ -265,7 +258,7 @@ export default function DashboardPage() {
                 ) : (
                   <div className="text-center py-12">
                     <div className="text-6xl mb-4">✨</div>
-                    <p className="text-xl text-white font-semibold mb-2">You're all caught up!</p>
+                    <p className="text-xl text-white font-semibold mb-2">You&apos;re all caught up!</p>
                     <p className="text-zinc-400">Your story is in great shape. Keep developing.</p>
                   </div>
                 )}

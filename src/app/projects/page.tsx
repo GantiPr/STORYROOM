@@ -3,10 +3,9 @@
 import { useState } from "react";
 import { useProjects } from "@/hooks/useProjects";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 export default function ProjectsPage() {
-  const { projects, activeProjectId, setActiveProjectId, isLoaded, createProject, deleteProject, getActiveProject } = useProjects();
+  const { projects, isLoaded, createProject, deleteProject } = useProjects();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectDescription, setNewProjectDescription] = useState("");
@@ -23,7 +22,7 @@ export default function ProjectsPage() {
   const handleCreateProject = () => {
     if (!newProjectName.trim()) return;
     
-    const project = createProject(newProjectName.trim(), newProjectDescription.trim());
+    createProject(newProjectName.trim(), newProjectDescription.trim());
     setNewProjectName("");
     setNewProjectDescription("");
     setShowCreateModal(false);
@@ -38,8 +37,6 @@ export default function ProjectsPage() {
       deleteProject(projectId);
     }
   };
-
-  const activeProject = getActiveProject();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 text-white">

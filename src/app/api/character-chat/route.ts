@@ -1,36 +1,8 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { z } from "zod";
 import type { Character, ChatMessage } from "@/lib/types";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-const CharacterUpdateSchema = z.object({
-  name: z.string().optional(),
-  role: z.enum(["protagonist", "antagonist", "supporting", "other"]).optional(),
-  logline: z.string().optional(),
-  desire: z.string().optional(),
-  fear: z.string().optional(),
-  wound: z.string().optional(),
-  contradiction: z.string().optional(),
-  mainPurpose: z.string().optional(),
-  voice: z.object({
-    cadence: z.string().optional(),
-    tells: z.array(z.string()).optional(),
-    tabooWords: z.array(z.string()).optional(),
-  }).optional(),
-  arc: z.object({
-    start: z.string().optional(),
-    midpoint: z.string().optional(),
-    end: z.string().optional(),
-  }).optional(),
-});
-
-// ResponseSchema for type validation (currently unused but kept for future use)
-// const ResponseSchema = z.object({
-//   assistant: z.string(),
-//   character: CharacterUpdateSchema.optional(),
-// });
 
 export async function POST(req: Request) {
   try {

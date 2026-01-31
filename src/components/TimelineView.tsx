@@ -211,7 +211,7 @@ export function TimelineView({ timeline, isGenerating, onGenerate }: TimelineVie
             
             {/* Events */}
             <div className="space-y-6">
-              {filteredEvents.map((event, idx) => {
+              {filteredEvents.map((event) => {
                 const isSelected = selectedEvent === event.id;
                 const hasIssues = issues.some(i => i.affectedEvents.includes(event.id));
                 

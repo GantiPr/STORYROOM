@@ -16,7 +16,7 @@ export async function tavilySearch(query: string): Promise<TavilyResult[]> {
 
   if (!res.ok) throw new Error(`Tavily error: ${await res.text()}`);
   const data = await res.json();
-  return (data?.results ?? []).map((r: any) => ({
+  return (data?.results ?? []).map((r: { title: string; url: string; content: string; score?: number }) => ({
     title: r.title,
     url: r.url,
     content: r.content,

@@ -10,7 +10,7 @@ import { calculateStoryHealth, type HealthIndicator, type NextAction } from "@/l
 import { TimelineView } from "@/components/TimelineView";
 
 export default function ProjectPage() {
-  const { projects, activeProjectId, setActiveProjectId, isLoaded, updateProjectBible } = useProjects();
+  const { projects, setActiveProjectId, isLoaded, updateProjectBible } = useProjects();
   const params = useParams();
   const router = useRouter();
   const projectId = params.id as string;
@@ -103,14 +103,6 @@ export default function ProjectPage() {
                      (bible.builderSessions && bible.builderSessions.length > 0);
 
   const health = calculateStoryHealth(bible);
-
-  const getStatusColor = (status: HealthIndicator['status']) => {
-    switch (status) {
-      case 'good': return 'text-green-400';
-      case 'warning': return 'text-yellow-400';
-      case 'needs-attention': return 'text-red-400';
-    }
-  };
 
   const getStatusIcon = (status: HealthIndicator['status']) => {
     switch (status) {
@@ -412,7 +404,7 @@ export default function ProjectPage() {
                 ) : (
                   <div className="text-center py-12">
                     <div className="text-6xl mb-4">✨</div>
-                    <p className="text-xl text-white font-semibold mb-2">You're all caught up!</p>
+                    <p className="text-xl text-white font-semibold mb-2">You&apos;re all caught up!</p>
                     <p className="text-blue-300">Your story is in great shape. Keep developing.</p>
                   </div>
                 )}

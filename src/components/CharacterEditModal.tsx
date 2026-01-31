@@ -274,7 +274,7 @@ export default function CharacterEditModal({ isOpen, onClose, onSave, character 
                   <label className="block text-xs font-medium text-zinc-400 mb-1">Role</label>
                   <select
                     value={currentCharacter.role || "other"}
-                    onChange={(e) => setCurrentCharacter(prev => ({ ...prev, role: e.target.value as any }))}
+                    onChange={(e) => setCurrentCharacter(prev => ({ ...prev, role: e.target.value as Character['role'] }))}
                     className="w-full px-3 py-2 bg-zinc-800 border border-zinc-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
                     <option value="protagonist">Protagonist</option>

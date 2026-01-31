@@ -340,7 +340,7 @@ export default function CritiquePage() {
               </div>
               <h3 className="text-2xl font-semibold text-white mb-3">Ready for Analysis</h3>
               <p className="text-zinc-400 mb-6 max-w-md mx-auto">
-                I'll analyze your story for strengths, gaps, inconsistencies, and potential similarities to other works.
+                I&apos;ll analyze your story for strengths, gaps, inconsistencies, and potential similarities to other works.
               </p>
               
               {/* Story Stats */}

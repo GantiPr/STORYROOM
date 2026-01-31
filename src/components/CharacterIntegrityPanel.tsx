@@ -1,18 +1,17 @@
 "use client";
 
 import { analyzeCharacterIntegrity, generateIntegrityPrompts, type CharacterIntegrity } from "@/lib/characterIntegrity";
-import type { Character, StoryBible } from "@/lib/types";
+import type { Character } from "@/lib/types";
 import { useState } from "react";
 
 type CharacterIntegrityPanelProps = {
   character: Character;
-  bible: StoryBible;
   onPromptClick?: (prompt: string) => void;
 };
 
-export function CharacterIntegrityPanel({ character, bible, onPromptClick }: CharacterIntegrityPanelProps) {
+export function CharacterIntegrityPanel({ character, onPromptClick }: CharacterIntegrityPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const integrity = analyzeCharacterIntegrity(character, bible);
+  const integrity = analyzeCharacterIntegrity(character);
   
   const getStatusColor = (status: CharacterIntegrity['status']) => {
     switch (status) {
