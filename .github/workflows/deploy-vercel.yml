@@ -1,0 +1,57 @@
+name: Deploy to Vercel
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ci-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      # Optional but recommended: fail fast on quality
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Typecheck
+        run: npm run typecheck --if-present
+
+      # If your build requires runtime env vars at build time, expose them here.
+      # If not needed, you can remove this env block.
+      - name: Build
+        run: npm run build
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      # Preview deploy for PRs, production deploy for main
+      - name: Deploy to Vercel
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            vercel deploy --token=${{ secrets.VERCEL_TOKEN }} \
+              --org=${{ secrets.VERCEL_ORG_ID }} \
+              --project=${{ secrets.VERCEL_PROJECT_ID }}
+          else
+            vercel deploy --prod --token=${{ secrets.VERCEL_TOKEN }} \
+              --org=${{ secrets.VERCEL_ORG_ID }} \
+              --project=${{ secrets.VERCEL_PROJECT_ID }}
+          fi
