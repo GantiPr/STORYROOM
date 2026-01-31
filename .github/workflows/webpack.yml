@@ -1,4 +1,4 @@
-name: NodeJS with Webpack
+name: CI Build and Lint
 
 on:
   push:
@@ -21,8 +21,16 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
+        cache: npm
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Lint
+      run: npm run lint
 
     - name: Build
-      run: |
-        npm install
-        npx webpack
+      run: npm run build
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
