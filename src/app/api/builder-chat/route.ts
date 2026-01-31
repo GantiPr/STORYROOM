@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
     // Build canon context if available
     const canonContext = storyContext.canon && storyContext.canon.length > 0
-      ? `\n\nESTABLISHED STORY CANON (locked rules - flag conflicts):\n${storyContext.canon.map((c: any) => `- ${c.content} [${c.type}]`).join('\n')}`
+      ? `\n\nESTABLISHED STORY CANON (locked rules - flag conflicts):\n${storyContext.canon.map((c: { content: string; type: string }) => `- ${c.content} [${c.type}]`).join('\n')}`
       : "";
 
     const systemPrompt = `You are a creative story development assistant who challenges writers to think deeper and explore alternatives.
@@ -41,7 +41,7 @@ STORY CONTEXT:
 - Premise: ${storyContext.premise || "Not set"}
 - Genre: ${storyContext.genre || "Not set"}
 - Themes: ${storyContext.themes?.join(", ") || "None"}
-- Characters: ${storyContext.characters?.map((c: any) => `${c.name} (${c.role})`).join(", ") || "None"}${canonContext}
+- Characters: ${storyContext.characters?.map((c: { name: string; role: string }) => `${c.name} (${c.role})`).join(", ") || "None"}${canonContext}
 
 ${canonContext ? `\n⚠️ CANON GUARDRAILS:
 If the writer suggests something that contradicts established canon, gently point it out:
@@ -155,15 +155,16 @@ Remember: You're not here to say "great idea!" - you're here to make their ideas
         Connection: "keep-alive",
       },
     });
-  } catch (error: any) {
-    console.error("Builder chat error:", error);
+  } catch (error) {
+    const err = error as Error;
+    console.error("Builder chat error:", err);
     console.error("Error details:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
+      message: err.message,
+      stack: err.stack,
+      name: err.name
     });
     return NextResponse.json(
-      { error: error.message || "Failed to process request" },
+      { error: err.message || "Failed to process request" },
       { status: 500 }
     );
   }

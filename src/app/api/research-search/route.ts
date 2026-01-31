@@ -58,7 +58,14 @@ export async function POST(req: NextRequest) {
     const data = await searchResponse.json();
     
     // Format results for the frontend
-    const results = (data.results || []).map((result: any, index: number) => ({
+    const results = (data.results || []).map((result: { 
+      title: string; 
+      content?: string; 
+      snippet?: string; 
+      url: string;
+      published_date?: string;
+      score?: number;
+    }, index: number) => ({
       id: `S${index + 1}`,
       title: result.title,
       snippet: result.content || result.snippet || "",

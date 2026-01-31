@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useBible } from "@/hooks/useBible";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { WorkspaceNavigationBar } from "@/components/WorkspaceNavigationBar";
 
 type CritiqueMode = "structural" | "character" | "thematic" | "continuity";
@@ -30,7 +29,6 @@ export default function CritiquePage() {
   const [selectedMode, setSelectedMode] = useState<CritiqueMode>("structural");
   const [selectedScope, setSelectedScope] = useState<CritiqueScope>({ type: "whole-story" });
   const [selectedCharacterId, setSelectedCharacterId] = useState<string>("");
-  const router = useRouter();
 
   if (!isLoaded) {
     return (

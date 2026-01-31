@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useBible } from "@/hooks/useBible";
-import type { BuilderSession, StoryPhase } from "@/lib/types";
+import type { BuilderSession, StoryPhase, StoryBible } from "@/lib/types";
 import { SaveArtifactModal } from "@/components/SaveArtifactModal";
 import { PhaseSelector } from "@/components/PhaseSelector";
 import { WorkspaceNavigationBar } from "@/components/WorkspaceNavigationBar";
@@ -319,7 +319,7 @@ function BuilderChatModal({
   onSave: (session: BuilderSession) => void;
   existingSession: BuilderSession | null;
   nextSessionId: string;
-  storyContext: any;
+  storyContext: StoryBible;
 }) {
   const { setBible } = useBible();
   const [messages, setMessages] = useState<Array<{ role: "user" | "assistant"; content: string }>>(
@@ -371,6 +371,7 @@ function BuilderChatModal({
         }]);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSend = async () => {
@@ -393,7 +394,7 @@ function BuilderChatModal({
             genre: storyContext.genre,
             themes: storyContext.themes,
             phase: storyContext.phase,
-            characters: storyContext.characters.map((c: any) => ({ id: c.id, name: c.name, role: c.role })),
+            characters: storyContext.characters.map((c) => ({ id: c.id, name: c.name, role: c.role })),
             canon: storyContext.canon || []
           }
         })
@@ -436,7 +437,7 @@ function BuilderChatModal({
                     return newMessages;
                   });
                 }
-              } catch (e) {
+              } catch {
                 // Skip invalid JSON
               }
             }
@@ -517,7 +518,7 @@ function BuilderChatModal({
                   summary += parsed.text;
                   setSessionSummary(summary);
                 }
-              } catch (e) {
+              } catch {
                 // Skip invalid JSON
               }
             }

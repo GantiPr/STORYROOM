@@ -26,10 +26,11 @@ const CharacterUpdateSchema = z.object({
   }).optional(),
 });
 
-const ResponseSchema = z.object({
-  assistant: z.string(),
-  character: CharacterUpdateSchema.optional(),
-});
+// ResponseSchema for type validation (currently unused but kept for future use)
+// const ResponseSchema = z.object({
+//   assistant: z.string(),
+//   character: CharacterUpdateSchema.optional(),
+// });
 
 export async function POST(req: Request) {
   try {
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
 
     // Client-side extraction as backup
     const extractCharacterFromText = (text: string) => {
-      const extracted: any = {};
+      const extracted: Record<string, string> = {};
       
       // Name extraction
       const namePatterns = [
@@ -204,7 +205,7 @@ Remember: Your job is to make characters BETTER by challenging weak choices and 
       });
     }
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("Character chat error:", error);
     return NextResponse.json(
       { assistant: "Sorry, I encountered an error. Please try again." },

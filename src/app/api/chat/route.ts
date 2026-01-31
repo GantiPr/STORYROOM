@@ -129,7 +129,7 @@ export async function POST(req: Request) {
 
       // Filter out failed extractions and get successful ones
       const successfulPages = pages
-        .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
+        .filter((result): result is PromiseFulfilledResult<{ id: string; url: string; title: string; domain: string; text: string }> => result.status === 'fulfilled')
         .map(result => result.value)
         .filter(page => !page.text.startsWith('Content unavailable'));
 
@@ -244,7 +244,8 @@ Rules:
 
     const assistant = resp.choices[0]?.message?.content ?? "…";
     return NextResponse.json({ assistant });
-  } catch (e: any) {
-    return new NextResponse(e?.message ?? "Unknown error", { status: 400 });
+  } catch (e) {
+    const error = e as Error;
+    return new NextResponse(error?.message ?? "Unknown error", { status: 400 });
   }
 }

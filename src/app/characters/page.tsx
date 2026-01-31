@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import type { Character } from "@/lib/types";
+import type { Character, ResearchNote, BuilderSession } from "@/lib/types";
 import { useBible } from "@/hooks/useBible";
 import CharacterCreationModal from "@/components/CharacterCreationModal";
 import CharacterEditModal from "@/components/CharacterEditModal";
@@ -9,7 +9,7 @@ import Link from "next/link";
 import { WorkspaceNavigationBar } from "@/components/WorkspaceNavigationBar";
 
 export default function CharactersPage() {
-  const { bible, setBible, isLoaded, isSaving, manualSave } = useBible();
+  const { bible, setBible, isLoaded, isSaving } = useBible();
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -84,6 +84,7 @@ export default function CharactersPage() {
         }));
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded, bible.characters.length, setBible]);
 
   // Don't render until bible is loaded
@@ -404,7 +405,7 @@ export default function CharactersPage() {
                   onSave={handleSaveCharacter}
                   onCancel={handleCancelEdit}
                   onDelete={() => handleDeleteCharacter(selectedCharacter.id)}
-                  allCharacters={bible.characters}
+                  // allCharacters={bible.characters} // Unused for now
                   researchNotes={bible.research}
                   builderSessions={builderSessions}
                 />
@@ -511,7 +512,7 @@ function CharacterDetailPanel({
   onSave,
   onCancel,
   onDelete,
-  allCharacters,
+  // allCharacters, // Unused for now
   researchNotes,
   builderSessions
 }: {
@@ -522,9 +523,9 @@ function CharacterDetailPanel({
   onSave: (character: Character) => void;
   onCancel: () => void;
   onDelete: () => void;
-  allCharacters: Character[];
-  researchNotes: any[];
-  builderSessions: any[];
+  // allCharacters: Character[]; // Unused for now
+  researchNotes: ResearchNote[];
+  builderSessions: BuilderSession[];
 }) {
   const [editedCharacter, setEditedCharacter] = useState<Character>(character);
   // Store raw strings for comma-separated fields

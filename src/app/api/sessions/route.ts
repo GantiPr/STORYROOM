@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import type { StoryBible } from "@/lib/types";
 
 // NOTE: Prisma/SQLite doesn't work on Vercel serverless environment
 // All data is stored in localStorage on the client side
 // These endpoints are kept for backward compatibility but don't persist to database
 
 // GET - Load the latest session or all sessions
-export async function GET(request: Request) {
+export async function GET() {
   try {
     // Sessions are stored in localStorage on client side
     return NextResponse.json({ session: null });
