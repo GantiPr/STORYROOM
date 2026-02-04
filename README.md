@@ -92,6 +92,23 @@ npm run dev
 
 6. Open [http://localhost:3000](http://localhost:3000) in your browser
 
+### Docker Deployment
+
+Alternatively, you can run Storyroom using Docker:
+
+1. Make sure Docker and Docker Compose are installed
+
+2. Set up your environment variables in `.env.local` (same as above)
+
+3. Build and run with Docker Compose:
+```bash
+docker compose up --build
+```
+
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+The Docker setup will automatically build the Next.js application and run it in production mode.
+
 ## How to Use
 
 ### Creating Your First Project
